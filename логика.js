@@ -148,7 +148,7 @@
     const banned = dow === 4 ? rules.fridayExcludeGenres.map((g) => g.toLowerCase()) : [];
     return (cands || []).filter((c) => {
       if (seenSet.has(normTitle(c.title, c.year))) return false;
-      if (c.minutes && c.minutes > max) return false;
+      if (c.minutes && (c.minutes > max || c.minutes < 60)) return false;
       if (r.ages && c.age != null && !r.ages.includes(c.age)) return false;
       if ((c.genres || []).some((g) => banned.includes(String(g).toLowerCase()))) return false;
       return true;
