@@ -41,6 +41,10 @@ button.sm{min-height:36px;padding:0 10px;font-size:14px}
 form.add{display:grid;gap:8px;margin-top:10px}
 form.add input,form.add select{font:inherit;min-height:44px;padding:0 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
 .err{color:var(--bad);font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 8px}.chip input{position:absolute;opacity:0;pointer-events:none}.chip span{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border:1px solid var(--line);border-radius:99px;cursor:pointer;background:var(--bg)}.chip input:checked+span{background:var(--acc);border-color:var(--acc);color:#fff}.chip input:focus-visible+span{outline:2px solid var(--acc)}
+textarea{font:inherit;width:100%;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--bg);color:var(--ink)}
+.frow{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-top:10px}.frow label{display:grid;gap:4px;font-size:14px;color:var(--mut)}.frow select{font:inherit;min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:0 8px}.chk{display:flex!important;grid-auto-flow:column;align-items:center;gap:8px!important}
+.pickbox{border-color:var(--acc)}.pickbox b{font-size:18px;display:block;margin:2px 0}.why{background:var(--bg);border-left:3px solid var(--acc);padding:6px 10px;border-radius:0 8px 8px 0;font-size:14px;margin-top:6px}.badge{background:var(--acc);color:#fff;border-radius:6px;padding:0 6px;font-size:12px}
 .mini{width:48px;height:72px;object-fit:cover;border-radius:8px;background:var(--line);flex:none}
 .toast{position:fixed;left:16px;right:16px;bottom:16px;max-width:520px;margin:0 auto;background:var(--ink);color:var(--bg);border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;gap:12px;align-items:center}
 .toast button{background:transparent;color:inherit;border-color:currentColor;min-height:36px}
@@ -70,7 +74,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<
 const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
 let KEY = lsGet(KEY_LS), RULES = null;
-const S = { kids: null, health: null, film: null, mode: lsGet("dash_mode") || "family", form: false, undo: false, view: null, bet: null };
+const S = { kids: null, health: null, film: null, mode: lsGet("dash_mode") || "family", form: false, undo: false, view: null, bet: null, rec: null, recBusy: false, recErr: null, form2: null };
 window.addEventListener("hashchange", () => { S.view = location.hash === "#film" ? "film" : null; render(); });
 
 async function api(fn, action, payload) {
@@ -124,6 +128,7 @@ async function load() {
 
 // ── отрисовка ──
 function render() {
+  if (S.view === "film" && !S.recBusy && document.activeElement && document.activeElement.closest && document.activeElement.closest("#recForm")) return;   // не сбрасываем форму под руками
   if (S.form && document.activeElement && document.activeElement.closest("form.add")) return;
   const now = new Date(), msk = Dash.msk(now);
   $("hDate").textContent = new Intl.DateTimeFormat("ru-RU", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Moscow" }).format(now);
@@ -180,42 +185,77 @@ function healthCardHtml(c, urgent) {
   return { fold: "", full: `<div class="card ${urgent ? "urgent" : ""}"><h2>Здоровье ${urgent ? '<span class="tag">Срочно</span>' : ""}</h2>${rows}<div class="acts" style="margin-top:8px"><a class="btn sm" href="${esc(medUrl())}">Открыть в медкнижке</a></div></div>` };
 }
 function medUrl() { const p = RULES.find((x) => x.withCode); return p.url + (KEY ? "?k=" + encodeURIComponent(KEY) : ""); }
-const MODE_LABEL = { family: "Всей семьёй", couple: "Вдвоём с Аней", solo: "Я один" };
-function modeBar() { return `<div class="acts">${["family", "couple", "solo"].map((m) => `<button class="sm ${S.mode === m ? "pri" : ""}" data-act="mode" data-m="${m}">${MODE_LABEL[m]}</button>`).join("")}</div>`; }
-function unseenFlat() { return S.film && S.film.unseen ? [...S.film.unseen.films, ...S.film.unseen.cartoons] : []; }
+const MODE_LABEL = { solo: "Я один", couple: "С Аней", family: "Всей семьёй", kids: "Только дети" };
+const MOODS = [["лёгкое, чтобы не думать", "Лёгкое"], ["смешное", "Посмеяться"], ["фантастика с идеей", "Фантастика"], ["приключения", "Приключения"], ["напряжённый триллер", "Триллер"],
+  ["криминал без российских ментов", "Криминал"], ["драма, чтобы подумать", "Драма"], ["страшное", "Ужасы"], ["мюзикл", "Мюзикл"], ["аниме", "Аниме"],
+  ["советская классика", "Советское"], ["сериал", "Сериал"], ["короткое, до 90 минут", "Короткое"], ["удиви меня чем-то неожиданным", "Удиви"]];
+function modeBar() { return `<div class="acts">${Object.keys(MODE_LABEL).map((m) => `<button class="sm ${S.mode === m ? "pri" : ""}" data-act="mode" data-m="${m}">${MODE_LABEL[m]}</button>`).join("")}</div>`; }
 function filmMeta(f) {
-  return [f.year, f.genre, f.minutes ? f.minutes + " мин" : "", f.age != null ? f.age + "+" : "", f.rating ? "Кинопоиск " + String(f.rating).replace(".", ",") : "рейтинг не проверен"].filter(Boolean).map(esc).join(" · ");
+  const rt = f.rating ? "Кинопоиск " + String(f.rating).replace(".", ",") : f.my_rating != null ? "" : "рейтинг не проверен";
+  return [f.year, f.genre, f.minutes ? f.minutes + " мин" : f.runtime, f.age != null && f.age !== "" ? f.age + "+" : "", rt].filter(Boolean).map(esc).join(" · ");
 }
+function pickFilm(F) { if (!F || !F.new) return null; const list = F.new; if (S.bet != null && list[S.bet]) return { f: list[S.bet], reason: list[S.bet].why }; const p = F.pick && list.find((f) => f.title === F.pick.title && f.year === F.pick.year); return p ? { f: p, reason: F.pick.reason } : list[0] ? { f: list[0], reason: list[0].why } : null; }
 function filmCard() {
-  if (!S.film) return { full: `<div class="card" id="film"><h2>Фильм на вечер</h2><span class="sub">Подбираю по вашим оценкам… это занимает до минуты один раз в день</span></div>`, fold: "" };
-  if (S.film.error) return { full: `<div class="card" id="film"><h2>Фильм на вечер</h2>Фильм не подобрался · <button class="sm" data-act="reload">Повторить</button>${modeBar()}</div>` };
-  const list = unseenFlat(), f = S.bet != null && list[S.bet] ? list[S.bet] : S.film.bet;
-  if (!f) return { full: `<div class="card" id="film"><h2>Фильм на вечер</h2>Подходящего не нашлось. <button class="sm" data-act="refresh">Подобрать заново</button>${modeBar()}</div>`, fold: "Фильм: вариантов нет" };
-  const why = (S.bet == null && S.film.bet && S.film.bet.reason) || f.why || "";
+  const FF = S.film;
+  if (!FF) return { full: `<div class="card" id="film"><h2>Фильм на вечер</h2><span class="sub">Подбираю по вашим оценкам… один раз в день, до минуты</span></div>`, fold: "" };
+  if (FF.error) return { full: `<div class="card" id="film"><h2>Фильм на вечер</h2>Фильм не подобрался · <button class="sm" data-act="reload">Повторить</button>${modeBar()}</div>`, fold: "" };
+  const pk = pickFilm(FF);
+  if (!pk) return { full: `<div class="card" id="film"><h2>Фильм на вечер <button class="sm" data-act="film-all">Подбор →</button></h2>Подходящего не нашлось. <button class="sm" data-act="refresh">Подобрать заново</button>${modeBar()}</div>`, fold: "Фильм: вариантов нет" };
+  const f = pk.f;
   return { fold: "", full: `<div class="card" id="film"><h2>Фильм на вечер <button class="sm" data-act="film-all">Весь подбор →</button></h2>${modeBar()}
     <div class="film" style="margin-top:10px">${f.poster ? `<img src="${esc(f.poster)}" alt="">` : `<img alt="">`}
       <div><h3>${esc(f.title)}</h3><div class="sub">${filmMeta(f)}</div>
-      <p>${esc(why)}</p>${f.about ? `<p class="sub">${esc(f.about)}</p>` : ""}
-      <div class="acts"><button class="pri sm" data-act="watch">Смотрим</button>${list.length > 1 ? '<button class="sm" data-act="next">Другой</button>' : ""}${f.url ? `<a class="btn sm" href="${esc(f.url)}" target="_blank" rel="noopener">Подробнее</a>` : ""}</div></div></div></div>` };
+      <p>${esc(pk.reason || f.why || "")}</p>${f.description ? `<p class="sub">${esc(f.description)}</p>` : ""}
+      <div class="acts"><button class="pri sm" data-act="watch">Смотрим</button>${FF.new.length > 1 ? '<button class="sm" data-act="next">Другой</button>' : ""}${f.wiki ? `<a class="btn sm" href="${esc(f.wiki)}" target="_blank" rel="noopener">Подробнее</a>` : ""}</div></div></div></div>` };
 }
-function filmItem(f, blk, grp, i) {
-  const mine = f.myRating ? `<div class="sub">Твоя оценка — ${esc(f.myRating)}</div>` : `<div class="sub">${filmMeta(f)}</div>`;
-  return `<div class="row"><img class="mini" src="${esc(f.poster || "")}" alt="">
-    <div class="grow"><div><b>${esc(f.title)}</b> ${f.myRating ? `<span class="sub">${esc(f.year || "")} · ${esc(f.genre || "")}</span>` : ""}</div>${mine}
-      ${f.about ? `<div class="sub">${esc(f.about)}</div>` : ""}${f.why ? `<div><b>Почему тебе:</b> ${esc(f.why)}</div>` : ""}</div>
-    <div class="acts"><button class="sm" data-act="watch">Смотрим</button><button class="sm" data-act="seen" data-b="${blk}" data-g="${grp}" data-i="${i}">Уже смотрел</button></div></div>`;
+function filmCardFull(f, rewatch, blk, i) {
+  const title = f.wiki ? `<a href="${esc(f.wiki)}" target="_blank" rel="noopener">${esc(f.title)}</a>` : esc(f.title);
+  const orig = f.original_title && f.original_title !== f.title ? ` <span class="sub">(${esc(f.original_title)})</span>` : "";
+  const badge = rewatch && f.my_rating != null ? ` <span class="badge">моя ${esc(f.my_rating)}</span>` : "";
+  return `<div class="row"><img class="mini" src="${esc(f.poster || "")}" alt="" loading="lazy">
+    <div class="grow"><div><b>${title}</b>${orig}${badge}</div><div class="sub">${filmMeta(f)}</div>
+      ${f.description ? `<div class="sub" style="margin-top:4px">${esc(f.description)}</div>` : ""}
+      ${f.why ? `<div class="why"><b>Почему тебе:</b> ${esc(f.why)}</div>` : ""}</div>
+    <div class="acts"><button class="sm" data-act="watch">Смотрим</button><button class="sm" data-act="seen" data-b="${blk}" data-i="${i}">Уже смотрел</button></div></div>`;
+}
+function filmSection(title, list, rewatch, blk, empty) {
+  const idx = (f) => list.indexOf(f);
+  const films = list.filter((f) => f.kind !== "animation"), anim = list.filter((f) => f.kind === "animation");
+  let h = `<div class="card"><h2>${title}</h2>`;
+  if (!list.length) return h + `<div class="sub">${empty}</div></div>`;
+  if (films.length) h += `<div class="day">Фильмы</div>${films.map((f) => filmCardFull(f, rewatch, blk, idx(f))).join("")}`;
+  if (anim.length) h += `<div class="day">Мультфильмы</div>${anim.map((f) => filmCardFull(f, rewatch, blk, idx(f))).join("")}`;
+  return h + "</div>";
+}
+function filmForm() {
+  const F = S.form2 || { mode: S.mode, moods: [], wish: "", format: "any", count: "8", rewatch: true };
+  return `<form class="card" id="recForm"><h2><button type="button" class="sm" data-act="film-back">← Назад</button><span>Что посмотрим сегодня?</span></h2>
+    <div class="sub">Подбор по моим оценкам: нейросеть знает весь список просмотренного и не предлагает виденное.</div>
+    <div class="day">Кто смотрит</div><div class="chips">${Object.keys(MODE_LABEL).map((m) => `<label class="chip"><input type="radio" name="mode" value="${m}" ${F.mode === m ? "checked" : ""}><span>${MODE_LABEL[m]}</span></label>`).join("")}</div>
+    <div class="day">Настроение и жанр — можно несколько</div><div class="chips">${MOODS.map(([v, l]) => `<label class="chip"><input type="checkbox" name="mood" value="${esc(v)}" ${F.moods.includes(v) ? "checked" : ""}><span>${l}</span></label>`).join("")}</div>
+    <div class="day">Чего хочется — своими словами</div>
+    <textarea name="wish" rows="3" placeholder="Например: что-то похожее на «Трассу 60», но посвежее. Или: вечер пятницы, устал, хочется доброго и смешного">${esc(F.wish)}</textarea>
+    <div class="frow"><label>Формат<select name="format"><option value="any" ${F.format === "any" ? "selected" : ""}>Фильмы и мультфильмы</option><option value="films" ${F.format === "films" ? "selected" : ""}>Только фильмы и сериалы</option><option value="animation" ${F.format === "animation" ? "selected" : ""}>Только мультфильмы</option></select></label>
+      <label>Сколько нового<select name="count">${["5", "8", "10"].map((n) => `<option ${F.count === n ? "selected" : ""}>${n}</option>`).join("")}</select></label>
+      <label class="chk"><input type="checkbox" name="rewatch" ${F.rewatch ? "checked" : ""}> Добавить «ещё вспомним»</label></div>
+    <div class="acts" style="margin-top:12px"><button class="pri" type="submit" ${S.recBusy ? "disabled" : ""}>${S.recBusy ? "Подбираю…" : "Подобрать"}</button></div></form>`;
+}
+function filmResults(D) {
+  if (S.recBusy) return `<div class="card"><span class="sub">Нейросеть листает ваш список и подбирает… обычно 20–60 секунд.</span></div>`;
+  if (S.recErr) return `<div class="card err">Не получилось: ${esc(S.recErr)}</div>`;
+  if (!D) return `<div class="card"><span class="sub">Подбираю ставку на сегодня…</span></div>`;
+  let h = "";
+  if (D.pick && D.pick.title) h += `<div class="card pickbox"><div class="sub">Ставка на сегодня</div><b>${esc(D.pick.title)}</b><div>${esc(D.pick.reason)}</div></div>`;
+  if (D.note) h += `<div class="card sub">${esc(D.note)}</div>`;
+  h += filmSection("Не смотрел", D.new || [], false, "new", "Под такой запрос нового не нашлось — попробуйте ослабить условия.");
+  if ((D.rewatch || []).length || (S.form2 ? S.form2.rewatch : true)) h += filmSection("Ещё вспомним", D.rewatch || [], true, "rewatch", "Из просмотренного с оценкой 7+ под запрос ничего не подошло.");
+  const dropped = D.dropped && D.dropped.length ? ` Убрал как уже виденное: ${D.dropped.map(esc).join(", ")}.` : "";
+  h += `<div class="sub" style="padding:0 4px">Модель: ${esc(D.model || "")} · в списке просмотренного ${esc(D.watched_count || "")} позиций.${dropped}</div>`;
+  return h;
 }
 function filmView() {
-  const F = S.film;
-  const head = `<div class="card"><h2><button class="sm" data-act="film-back">← Назад</button><span>Подбор фильмов</span></h2>${modeBar()}
-    <div class="sub" style="margin-top:8px">Подобрано ${F && F.made ? new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Moscow" }).format(new Date(F.made)) : "…"}
-      · <button class="sm" data-act="refresh">Подобрать заново</button></div></div>`;
-  if (!F) return head + `<div class="card"><span class="sub">Подбираю по вашим оценкам… до минуты, один раз в день</span></div>`;
-  if (F.error) return head + `<div class="card">Подбор не получился · <button class="sm" data-act="reload">Повторить</button></div>`;
-  const block = (title, d, blk) => `<div class="card"><h2>${title}</h2>
-    <div class="day">Фильмы</div>${d.films.length ? d.films.map((f, i) => filmItem(f, blk, "films", i)).join("") : '<div class="sub">Нет подходящих</div>'}
-    <div class="day">Мультфильмы</div>${d.cartoons.length ? d.cartoons.map((f, i) => filmItem(f, blk, "cartoons", i)).join("") : '<div class="sub">Нет подходящих</div>'}</div>`;
-  return head + block("Не смотрел", F.unseen, "unseen") + block("Ещё вспомним", F.rewatch, "rewatch");
+  const D = S.rec || S.film;
+  return filmForm() + filmResults(D && !D.error ? D : null);
 }
 function renderPlates() {
   $("plates").innerHTML = RULES.map((p) => `<a class="btn plate ${p.url ? "" : "soon"}" href="${esc(p.withCode ? medUrl() : p.url || "#")}"><span class="ic">${p.icon}</span><b>${esc(p.title)}</b><span>${p.url ? esc(p.caption) : "Скоро"}</span></a>`).join("");
@@ -250,14 +290,14 @@ document.addEventListener("click", async (ev) => {
     if (act === "close") { S.form = false; return render(); }
     if (act === "mode") { S.mode = b.dataset.m; lsSet("dash_mode", S.mode); S.film = null; S.bet = null; render(); try { S.film = await api("dash", "films_pick", { mode: S.mode }); } catch { S.film = { error: true }; } return render(); }
     if (act === "refresh") { S.film = null; S.bet = null; render(); try { S.film = await api("dash", "films_refresh", { mode: S.mode }); } catch { S.film = { error: true }; } return render(); }
-    if (act === "next") { const n = unseenFlat().length; S.bet = n ? ((S.bet == null ? 0 : S.bet) + 1) % n : null; return render(); }
+    if (act === "next") { const n = S.film && S.film.new ? S.film.new.length : 0; S.bet = n ? ((S.bet == null ? 0 : S.bet) + 1) % n : null; return render(); }
     if (act === "film-all") { location.hash = "#film"; return; }
     if (act === "film-back") { history.replaceState(null, "", location.pathname + location.search); S.view = null; return render(); }
     if (act === "watch") return toast("Приятного просмотра!");
     if (act === "seen") {
-      const blk = b.dataset.b, grp = b.dataset.g, f = S.film[blk][grp][+b.dataset.i], r = prompt(`«${f.title}»: оценка от 1 до 10 (можно пропустить)`, "");
+      const D = S.rec || S.film, blk = b.dataset.b, f = D[blk][+b.dataset.i], r = prompt(`«${f.title}»: оценка от 1 до 10 (можно пропустить)`, "");
       await api("dash", "films_seen", { title: f.title, year: f.year, type: f.genre, rating: r });
-      S.film[blk][grp].splice(+b.dataset.i, 1); S.bet = null; return render();
+      D[blk].splice(+b.dataset.i, 1); S.bet = null; return render();
     }
     if (act === "cancel") {
       const rec = !!ev1.recurringId, all = rec && confirm("Отменить всё расписание этого занятия? «Отмена» — только сегодняшнее.");
@@ -281,6 +321,16 @@ document.addEventListener("click", async (ev) => {
       toast(act === "booked" ? "Отмечено: записан" : act === "done" ? "Выполнено" : "Напомню через неделю", act === "booked" ? null : async () => { await api("mk", "task_state_set", { person: c.person, key: c.title, status: "clear" }); }); return render();
     }
   } catch { toast("Не получилось. Попробуйте ещё раз"); }
+});
+document.addEventListener("submit", async (ev) => {
+  const f = ev.target.closest && ev.target.closest("#recForm"); if (!f) return;
+  ev.preventDefault();
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  const d = new FormData(f);
+  S.form2 = { mode: d.get("mode") || "solo", moods: d.getAll("mood"), wish: String(d.get("wish") || "").trim(), format: d.get("format"), count: d.get("count"), rewatch: !!d.get("rewatch") };
+  S.mode = S.form2.mode; lsSet("dash_mode", S.mode); S.recBusy = true; S.recErr = null; render();
+  try { S.rec = await api("dash", "films_recommend", S.form2); } catch (e) { S.recErr = e.message === "error" ? "сервер не ответил, попробуйте ещё раз" : e.message; }
+  S.recBusy = false; render();
 });
 boot();
 </script>
