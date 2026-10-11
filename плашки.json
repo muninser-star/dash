@@ -1,0 +1,7 @@
+[
+  { "title": "Подбор фильмов", "caption": "Что посмотреть", "url": "#film", "icon": "🎬" },
+  { "title": "Медкнижка", "caption": "Здоровье семьи", "url": "https://muninser-star.github.io/mk-site/v2/", "icon": "🩺", "withCode": true },
+  { "title": "Инструменты", "caption": "Всё под рукой", "url": "https://muninser-star.github.io/tools-catalog/", "icon": "🧰" },
+  { "title": "Занятия с Димой", "caption": "Учимся дома", "url": "https://muninser-star.github.io/LFK/", "icon": "🤸" },
+  { "title": "Приключения с Димой", "caption": "Вылазки и квесты", "url": "adventures/", "icon": "🧭" }
+]

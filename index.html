@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<title>Семья</title>
+<style>
+:root{--bg:#f6f5f2;--card:#fff;--ink:#1d1d1b;--mut:#6b6a66;--line:#e4e2dc;--acc:#2f6fed;--ok:#2e8b57;--bad:#c8372d;--dima:#2f6fed;--danya:#d9822b;--family:#7a5cc7;--r:16px}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#141413;--card:#1e1e1c;--ink:#f1efe9;--mut:#a09e97;--line:#33322f;--acc:#6b9bff;--ok:#5cc08a;--bad:#ff7a70}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px max(16px,env(safe-area-inset-right)) 32px max(16px,env(safe-area-inset-left))}
+.wrap{max-width:1100px;margin:0 auto;display:grid;gap:16px;grid-template-columns:1fr}
+@media(min-width:900px){.wrap{grid-template-columns:2fr 1fr;align-items:start}.head{grid-column:1/-1}}
+.head h1{margin:0;font-size:22px}.head p{margin:2px 0 0;color:var(--mut)}
+.focus{display:grid;gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.card h2{margin:0 0 8px;font-size:15px;color:var(--mut);font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.card.urgent{border-color:var(--bad)}.tag{font-size:12px;background:var(--bad);color:#fff;border-radius:99px;padding:1px 8px}
+.folded{padding:10px 16px;color:var(--mut);font-size:14px}
+.day{font-size:13px;color:var(--mut);margin:10px 0 4px}
+.row{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.row:first-of-type{border-top:0}
+.time{font-variant-numeric:tabular-nums;font-weight:600;min-width:52px}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.grow{flex:1;min-width:140px}.sub{font-size:13px;color:var(--mut)}
+.past{opacity:.45}.now .time{color:var(--ok)}
+button,.btn{font:inherit;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+button.sm{min-height:36px;padding:0 10px;font-size:14px}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.plates{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(min-width:900px){.plates{grid-template-columns:1fr}}
+.plate{min-height:88px;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;padding:12px 14px;text-align:left}
+.plate b{font-size:16px}.plate span{font-size:13px;color:var(--mut)}.plate .ic{font-size:24px}
+.plate.soon{opacity:.5;pointer-events:none}
+.film{display:flex;gap:14px}
+.film img{width:96px;height:144px;object-fit:cover;border-radius:10px;background:var(--line);flex:none}
+.film h3{margin:0 0 2px;font-size:18px}
+form.add{display:grid;gap:8px;margin-top:10px}
+form.add input,form.add select{font:inherit;min-height:44px;padding:0 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
+.err{color:var(--bad);font-size:14px}
+.toast{position:fixed;left:16px;right:16px;bottom:16px;max-width:520px;margin:0 auto;background:var(--ink);color:var(--bg);border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.toast button{background:transparent;color:inherit;border-color:currentColor;min-height:36px}
+.gate{max-width:420px;margin:15vh auto;text-align:center}.gate input{width:100%;font:inherit;min-height:48px;padding:0 12px;margin:12px 0;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div id="gate" class="gate" hidden>
+  <h1>Введите код доступа</h1>
+  <p class="sub">Или откройте ссылку с кодом ещё раз.</p>
+  <input id="gateCode" placeholder="Код" autocomplete="off">
+  <button class="pri" id="gateOk">Войти</button>
+  <p class="err" id="gateErr"></p>
+</div>
+<div id="app" class="wrap" hidden>
+  <div class="head"><h1 id="hDate"></h1><p id="hSum"></p></div>
+  <main class="focus" id="focus"></main>
+  <aside class="plates" id="plates"></aside>
+</div>
+<div id="toast" class="toast" hidden></div>
+<script src="логика.js"></script>
+<script>
+const SB_URL = "https://cuhplpukqhdfutcymtmv.supabase.co", SB_KEY = "sb_publishable_ILfqT6mCyHBOu6BVVRxHKQ_0bPQtNi3", KEY_LS = "dash_key";
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
+let KEY = lsGet(KEY_LS), RULES = null;
+const S = { kids: null, health: null, film: null, mode: lsGet("dash_mode") || "family", form: false, undo: false };
+
+async function api(fn, action, payload) {
+  const r = await fetch(`${SB_URL}/functions/v1/${fn}`, { method: "POST", headers: { "Content-Type": "application/json", apikey: SB_KEY, "x-mk-key": KEY }, body: JSON.stringify({ action, ...(payload || {}) }) });
+  let j = {}; try { j = await r.json(); } catch {}
+  if (r.status === 403 || j.code === "forbidden") throw Object.assign(new Error("forbidden"), { forbidden: true });
+  if (j.status !== "ok") throw new Error(j.code || "error");
+  return j;
+}
+function toast(text, onUndo) {
+  const t = $("toast"); t.hidden = false;
+  t.innerHTML = `<span>${esc(text)}</span>${onUndo ? '<button id="undo">Отменить</button>' : ""}`;
+  S.undo = !!onUndo;
+  if (onUndo) $("undo").onclick = async () => { t.hidden = true; S.undo = false; await onUndo(); load(); };
+  clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; S.undo = false; render(); }, 10000);
+}
+
+// ── вход ──
+async function boot() {
+  const u = new URL(location.href), k = u.searchParams.get("k");
+  if (k) { KEY = k; lsSet(KEY_LS, k); u.searchParams.delete("k"); history.replaceState(null, "", u.pathname + u.search + u.hash); }
+  if (!KEY) return showGate();
+  try { await api("dash", "ping"); }
+  catch (e) { if (e.forbidden) { lsSet(KEY_LS, null); KEY = null; return showGate("Код не подошёл — откройте ссылку с кодом ещё раз."); }
+    $("app").hidden = false; $("focus").innerHTML = `<div class="card">Нет связи · <button class="sm" onclick="location.reload()">Повторить</button></div>`; return; }
+  RULES = await (await fetch("плашки.json")).json();
+  $("gate").hidden = true; $("app").hidden = false;
+  renderPlates(); load();
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
+  setInterval(() => { if (!S.form && !S.undo) { load(); } }, 15 * 60000);
+}
+function showGate(msg) {
+  $("gate").hidden = false; $("app").hidden = true; $("gateErr").textContent = msg || "";
+  $("gateOk").onclick = () => { const v = $("gateCode").value.trim(); const m = v.match(/[?&]k=([^&\s]+)/); lsSet(KEY_LS, m ? m[1] : v); location.reload(); };
+}
+
+// ── данные ──
+function today() { return new Date(Math.floor((Date.now() + 3 * 3600e3) / 86400e3) * 86400e3).toISOString().slice(0, 10); }
+async function load() {
+  const from = new Date(Date.now() - 3 * 3600e3).toISOString(), to = new Date(Date.now() + 50 * 3600e3).toISOString();
+  S.kids = null; S.health = null; render();
+  api("dash", "sched_list", { from, to }).then((j) => { S.kids = { events: j.events }; render(); }).catch(() => { S.kids = { error: true }; render(); });
+  Promise.all([api("mk", "medbook"), api("mk", "task_state_list")]).then(([m, st]) => {
+    const states = {}; (st.rows || []).forEach((r) => { states[r.person + "|" + r.task_key] = { s: r.status, until: r.until }; });
+    S.health = { items: Dash.healthItems(m.data), states };
+    render();
+  }).catch(() => { S.health = { error: true }; render(); });
+  api("dash", "films_pick", { mode: S.mode }).then((j) => { S.film = j; render(); }).catch(() => { S.film = { error: true }; render(); });
+}
+
+// ── отрисовка ──
+function render() {
+  if (S.form && document.activeElement && document.activeElement.closest("form.add")) return;
+  const now = new Date(), msk = Dash.msk(now);
+  $("hDate").textContent = new Intl.DateTimeFormat("ru-RU", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Moscow" }).format(now);
+  const view = S.kids && S.kids.events ? Dash.scheduleView(now, S.kids.events) : null;
+  const hc = S.health && S.health.items ? Dash.healthCard(today(), S.health.items, S.health.states) : null;
+  const film = S.film && S.film.film;
+  const order = Dash.focusOrder(now, { kids: { empty: !!view && !view.today.length && !view.tomorrow.length && !S.form },
+    health: { urgent: !!hc && hc.urgent, empty: !!hc && !hc.rows.length }, film: { empty: !!S.film && !S.film.error && !film } });
+  const parts = [];
+  if (view) parts.push(`${view.today.length} ${plural(view.today.length, "занятие", "занятия", "занятий")} сегодня`);
+  if (hc) parts.push(hc.total ? `${hc.total} ${plural(hc.total, "дело", "дела", "дел")} по здоровью` : "по здоровью спокойно");
+  if (film) parts.push("фильм подобран");
+  $("hSum").textContent = parts.join(" · ");
+  const html = { kids: kidsCard(view), health: healthCardHtml(hc, order.urgent), film: filmCard() };
+  $("focus").innerHTML = order.order.map((k) => order.collapsed.includes(k) && html[k].fold ? `<div class="card folded">${html[k].fold}</div>` : html[k].full).join("");
+  bind();
+}
+const plural = (n, a, b, c) => { const m = n % 100, d = n % 10; return m > 10 && m < 15 ? c : d === 1 ? a : d > 1 && d < 5 ? b : c; };
+
+function kidsCard(v) {
+  if (!S.kids) return { full: `<div class="card"><h2>Дети</h2><span class="sub">Загружаю…</span></div>`, fold: "" };
+  if (S.kids.error) return { full: `<div class="card"><h2>Дети</h2>Календарь не отвечает · <button class="sm" data-act="reload">Повторить</button></div>` };
+  const col = { dima: "var(--dima)", danya: "var(--danya)", family: "var(--family)" };
+  const rows = (arr, empty) => arr.length ? arr.map((r) => `<div class="row ${r.status}">
+      <span class="time">${esc(r.time)}</span><span class="dot" style="background:${col[r.child]}"></span>
+      <div class="grow"><div>${esc(r.childName)} · ${esc(r.title)}</div><div class="sub">${esc([r.until, r.place].filter(Boolean).join(" · "))}</div></div>
+      ${r.id ? `<div class="acts"><button class="sm" data-act="move" data-id="${esc(r.id)}">Перенести</button><button class="sm" data-act="cancel" data-id="${esc(r.id)}">Отменить</button></div>` : ""}</div>`).join("") : `<div class="sub">${empty}</div>`;
+  const withIds = (arr) => arr.map((r) => Object.assign(r, { id: (S.kids.events.find((e) => e.start === r.start && e.title === r.title) || {}).id }));
+  return { fold: `Дети: ${v.today.length + v.tomorrow.length ? "занятия есть" : "занятий нет"}`, full: `<div class="card"><h2>Дети — сегодня и завтра <button class="sm" data-act="add">+ Занятие</button></h2>
+    <div class="day">Сегодня</div>${rows(withIds(v.today), "Сегодня без занятий")}
+    <div class="day">Завтра</div>${rows(withIds(v.tomorrow), "Завтра без занятий")}
+    ${S.form ? addForm() : ""}</div>` };
+}
+function addForm() {
+  const d = new Date(Date.now() + 3 * 3600e3 + 86400e3).toISOString().slice(0, 10);
+  return `<form class="add" id="addForm">
+    <select name="child"><option value="dima">Дима</option><option value="danya">Даня</option><option value="family">Семья</option></select>
+    <input name="title" placeholder="Название, например Шахматы" required>
+    <input name="date" type="date" value="${d}" required><input name="time" type="time" value="17:00" required>
+    <input name="minutes" type="number" min="5" max="600" value="60" aria-label="Длительность, минут">
+    <select name="weekly"><option value="">Один раз</option><option value="1">Каждую неделю</option></select>
+    <input name="place" placeholder="Место (необязательно)">
+    <div class="err" id="addErr"></div>
+    <div class="acts"><button class="pri" type="submit">Записать в календарь</button><button type="button" data-act="close">Отмена</button></div></form>`;
+}
+function healthCardHtml(c, urgent) {
+  if (!S.health) return { full: `<div class="card"><h2>Здоровье</h2><span class="sub">Загружаю…</span></div>`, fold: "" };
+  if (S.health.error) return { full: `<div class="card"><h2>Здоровье</h2>Здоровье недоступно · <button class="sm" data-act="reload">Повторить</button></div>` };
+  if (!c.rows.length) return { full: `<div class="card"><h2>Здоровье</h2><span class="sub">Ближайших дел нет</span></div>`, fold: "Здоровье: ближайших дел нет" };
+  const rows = c.rows.map((r, i) => `<div class="row"><div class="grow"><div><b>${esc(r.who)}</b> · ${esc(r.title)}</div><div class="sub">${esc(r.status)}</div></div>
+    <div class="acts"><button class="sm" data-act="booked" data-i="${i}">Записан</button><button class="sm" data-act="done" data-i="${i}">Готово</button><button class="sm" data-act="snooze" data-i="${i}">Через неделю</button></div></div>`).join("");
+  return { fold: "", full: `<div class="card ${urgent ? "urgent" : ""}"><h2>Здоровье ${urgent ? '<span class="tag">Срочно</span>' : ""}</h2>${rows}<div class="acts" style="margin-top:8px"><a class="btn sm" href="${esc(medUrl())}">Открыть в медкнижке</a></div></div>` };
+}
+function medUrl() { const p = RULES.find((x) => x.withCode); return p.url + (KEY ? "?k=" + encodeURIComponent(KEY) : ""); }
+function filmCard() {
+  const modes = `<div class="acts">${["family", "couple", "solo"].map((m) => `<button class="sm ${S.mode === m ? "pri" : ""}" data-act="mode" data-m="${m}">${{ family: "Всей семьёй", couple: "Вдвоём с Аней", solo: "Я один" }[m]}</button>`).join("")}</div>`;
+  if (!S.film) return { full: `<div class="card" id="film"><h2>Фильм на вечер</h2><span class="sub">Подбираю…</span></div>`, fold: "" };
+  if (S.film.error) return { full: `<div class="card" id="film"><h2>Фильм на вечер</h2>Фильм не подобрался · <button class="sm" data-act="reload">Повторить</button>${modes}</div>` };
+  const f = S.film.film;
+  if (!f) return { full: `<div class="card" id="film"><h2>Фильм на вечер</h2>На сегодня вариантов больше нет ${modes}</div>`, fold: "Фильм: вариантов нет" };
+  const why = [f.facts, f.line].filter(Boolean).join(". ");
+  return { fold: "", full: `<div class="card" id="film"><h2>Фильм на вечер</h2>${modes}
+    <div class="film" style="margin-top:10px">${f.poster ? `<img src="${esc(f.poster)}" alt="">` : `<img alt="">`}
+      <div><h3>${esc(f.title)}</h3><div class="sub">${esc(f.year)} · ${f.minutes ? esc(f.minutes) + " мин · " : ""}${f.age != null ? esc(f.age) + "+ · " : ""}${f.rating ? "Кинопоиск " + esc(String(f.rating).replace(".", ",")) : ""}</div>
+      <p>${esc(why)}</p>${f.about ? `<p class="sub">${esc(f.about)}</p>` : ""}
+      <div class="acts"><button class="pri sm" data-act="watch">Смотрим</button>${S.film.left ? '<button class="sm" data-act="next">Другой</button>' : ""}<button class="sm" data-act="seen">Уже смотрели</button><a class="btn sm" href="${esc(f.url)}" target="_blank" rel="noopener">Кинопоиск</a></div></div></div></div>` };
+}
+function renderPlates() {
+  $("plates").innerHTML = RULES.map((p) => `<a class="btn plate ${p.url ? "" : "soon"}" href="${esc(p.withCode ? medUrl() : p.url || "#")}"><span class="ic">${p.icon}</span><b>${esc(p.title)}</b><span>${p.url ? esc(p.caption) : "Скоро"}</span></a>`).join("");
+}
+
+// ── действия ──
+function bind() {
+  const f = $("addForm");
+  if (f) f.onsubmit = async (e) => {
+    e.preventDefault(); const d = new FormData(f), err = $("addErr");
+    const start = new Date(`${d.get("date")}T${d.get("time")}:00+03:00`);
+    const clash = clashWith(d.get("child"), start, +d.get("minutes") || 60);
+    if (clash && !f.dataset.force) { err.textContent = `Пересекается с «${clash.title}» ${clash.time}. Нажмите ещё раз, чтобы записать всё равно.`; f.dataset.force = "1"; return; }
+    try {
+      const j = await api("dash", "sched_add", { child: d.get("child"), title: d.get("title"), start: start.toISOString(), minutes: +d.get("minutes") || 60, weekly: !!d.get("weekly"), place: d.get("place") });
+      S.form = false; toast("Записано в календарь", async () => { await api("dash", "sched_delete", { id: j.event.id }); }); load();
+    } catch { err.textContent = "Не получилось записать в календарь"; }
+  };
+}
+function clashWith(child, start, min) {
+  if (!S.kids || !S.kids.events) return null;
+  const s = +start, e = s + min * 60000;
+  const hit = S.kids.events.find((x) => Dash.childOf(x) === child && x.start.includes("T") && +new Date(x.start) < e && +new Date(x.end) > s);
+  return hit ? { title: hit.title, time: Dash.hhmm(Dash.msk(hit.start).min) } : null;
+}
+document.addEventListener("click", async (ev) => {
+  const b = ev.target.closest("[data-act]"); if (!b) return;
+  const act = b.dataset.act, id = b.dataset.id, ev1 = (S.kids && S.kids.events || []).find((e) => e.id === id);
+  try {
+    if (act === "reload") return load();
+    if (act === "add") { S.form = true; return render(); }
+    if (act === "close") { S.form = false; return render(); }
+    if (act === "mode") { S.mode = b.dataset.m; lsSet("dash_mode", S.mode); S.film = null; render(); S.film = await api("dash", "films_pick", { mode: S.mode }); return render(); }
+    if (act === "next") { S.film = await api("dash", "films_next", { mode: S.mode }); return render(); }
+    if (act === "watch") return toast("Приятного просмотра!");
+    if (act === "seen") {
+      const f = S.film.film, r = prompt("Оценка от 1 до 10 (можно пропустить)", ""); 
+      await api("dash", "films_seen", { title: f.title, year: f.year, type: (f.genres || [])[0], rating: r });
+      S.film = await api("dash", "films_next", { mode: S.mode }); return render();
+    }
+    if (act === "cancel") {
+      const rec = !!ev1.recurringId, all = rec && confirm("Отменить всё расписание этого занятия? «Отмена» — только сегодняшнее.");
+      await api("dash", "sched_cancel", { id, scope: all ? "all" : "one" });
+      toast("Отменено", all ? null : async () => { await api("dash", "sched_restore", { id }); }); return load();
+    }
+    if (act === "move") {
+      const t = prompt("Новое время, ЧЧ:ММ (в тот же день)", Dash.hhmm(Dash.msk(ev1.start).min)); if (!t || !/^\d{1,2}:\d{2}$/.test(t)) return;
+      const day = new Date(+new Date(ev1.start) + 3 * 3600e3).toISOString().slice(0, 10);
+      const all = !!ev1.recurringId && confirm("Перенести это и все следующие? «Отмена» — только это занятие.");
+      const prev = ev1.start;
+      await api("dash", "sched_move", { id, start: new Date(`${day}T${t.padStart(5, "0")}:00+03:00`).toISOString(), scope: all ? "all" : "one" });
+      toast("Перенесено", async () => { await api("dash", "sched_move", { id, start: prev, scope: all ? "all" : "one" }); }); return load();
+    }
+    if (["booked", "done", "snooze"].includes(act)) {
+      const c = Dash.healthCard(today(), S.health.items, S.health.states).rows[+b.dataset.i];
+      if (act === "booked") await api("mk", "task_label_set", { person: c.person, key: c.title, label: "записан" });
+      else if (act === "done") await api("mk", "task_state_set", { person: c.person, key: c.title, status: "done" });
+      else { const u = new Date(Date.now() + 7 * 86400e3).toISOString().slice(0, 10); await api("mk", "task_state_set", { person: c.person, key: c.title, status: "snooze", until: u }); }
+      S.health.states[c.person + "|" + Dash.taskKey(c.title)] = act === "snooze" ? { s: "snooze", until: new Date(Date.now() + 7 * 86400e3).toISOString().slice(0, 10) } : { s: "done" };
+      toast(act === "booked" ? "Отмечено: записан" : act === "done" ? "Выполнено" : "Напомню через неделю", act === "booked" ? null : async () => { await api("mk", "task_state_set", { person: c.person, key: c.title, status: "clear" }); }); return render();
+    }
+  } catch { toast("Не получилось. Попробуйте ещё раз"); }
+});
+boot();
+</script>
+</body>
+</html>
