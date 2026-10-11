@@ -315,8 +315,9 @@ document.addEventListener("click", async (ev) => {
     if (act === "watch") return toast("Приятного просмотра!");
     if (act === "seen") {
       const D = S.rec || S.film, blk = b.dataset.b, f = D[blk][+b.dataset.i], r = prompt(`«${f.title}»: оценка от 1 до 10 (можно пропустить)`, "");
-      await api("dash", "films_seen", { title: f.title, year: f.year, type: f.genre, rating: r });
-      D[blk].splice(+b.dataset.i, 1); S.bet = null; return render();
+      const j = await api("dash", "films_seen", { title: f.title, year: f.year, type: f.genre, rating: r });
+      D[blk].splice(+b.dataset.i, 1); S.bet = null; render();
+      return toast(j.sheet === "added" ? "Записано в таблицу" : j.sheet === "exists" ? "Уже есть в таблице" : "Отмечено на дашборде; в таблицу пока не записалось");
     }
     if (act === "cancel") {
       const rec = !!ev1.recurringId, all = rec && confirm("Отменить всё расписание этого занятия? «Отмена» — только сегодняшнее.");
