@@ -6,64 +6,59 @@
 <meta name="robots" content="noindex">
 <meta name="color-scheme" content="light dark">
 <title>Семья</title>
+<link rel="stylesheet" href="токены.css">
 <style>
-:root{--bg:#f6f5f2;--card:#fff;--ink:#1d1d1b;--mut:#6b6a66;--line:#e4e2dc;--acc:#2f6fed;--ok:#2e8b57;--bad:#c8372d;--dima:#2f6fed;--danya:#d9822b;--family:#7a5cc7;--r:16px}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#141413;--card:#1e1e1c;--ink:#f1efe9;--mut:#a09e97;--line:#33322f;--acc:#6b9bff;--ok:#5cc08a;--bad:#ff7a70}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px max(16px,env(safe-area-inset-right)) 32px max(16px,env(safe-area-inset-left))}
-.wrap{max-width:1100px;margin:0 auto;display:grid;gap:16px;grid-template-columns:1fr}
+/* Раскладка дашборда; всё остальное — компоненты дизайн-системы (токены.css) */
+body{padding-bottom:max(24px,env(safe-area-inset-bottom))}
+.wrap{max-width:var(--content-wide);margin:0 auto;padding:16px max(16px,env(safe-area-inset-right)) 16px max(16px,env(safe-area-inset-left));display:grid;gap:16px;grid-template-columns:1fr}
 @media(min-width:900px){.wrap{grid-template-columns:2fr 1fr;align-items:start}.head{grid-column:1/-1}}
-.head h1{margin:0;font-size:22px}.head p{margin:2px 0 0;color:var(--mut)}
-.focus{display:grid;gap:12px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
-.card h2{margin:0 0 8px;font-size:15px;color:var(--mut);font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.card.urgent{border-color:var(--bad)}.tag{font-size:12px;background:var(--bad);color:#fff;border-radius:99px;padding:1px 8px}
-.folded{padding:10px 16px;color:var(--mut);font-size:14px}
-.day{font-size:13px;color:var(--mut);margin:10px 0 4px}
-.row{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap}
-.row:first-of-type{border-top:0}
-.time{font-variant-numeric:tabular-nums;font-weight:600;min-width:52px}
-.dot{width:10px;height:10px;border-radius:50%;flex:none}
-.grow{flex:1;min-width:140px}.sub{font-size:13px;color:var(--mut)}
-.past{opacity:.45}.now .time{color:var(--ok)}
-button,.btn{font:inherit;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
-button.pri{background:var(--acc);border-color:var(--acc);color:#fff}
-button.sm{min-height:36px;padding:0 10px;font-size:14px}
-.acts{display:flex;gap:6px;flex-wrap:wrap}
-.plates{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-@media(min-width:900px){.plates{grid-template-columns:1fr}}
-.plate{min-height:88px;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;padding:12px 14px;text-align:left}
-.plate b{font-size:16px}.plate span{font-size:13px;color:var(--mut)}.plate .ic{font-size:24px}
-.plate.soon{opacity:.5;pointer-events:none}
-.film{display:flex;gap:14px}
-.film img{width:96px;height:144px;object-fit:cover;border-radius:10px;background:var(--line);flex:none}
-.film h3{margin:0 0 2px;font-size:18px}
-form.add{display:grid;gap:8px;margin-top:10px}
-form.add input,form.add select{font:inherit;min-height:44px;padding:0 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
-.err{color:var(--bad);font-size:14px}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 8px}.chip input{position:absolute;opacity:0;pointer-events:none}.chip span{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border:1px solid var(--line);border-radius:99px;cursor:pointer;background:var(--bg)}.chip input:checked+span{background:var(--acc);border-color:var(--acc);color:#fff}.chip input:focus-visible+span{outline:2px solid var(--acc)}
-textarea{font:inherit;width:100%;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--bg);color:var(--ink)}
-.frow{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-top:10px}.frow label{display:grid;gap:4px;font-size:14px;color:var(--mut)}.frow select{font:inherit;min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:0 8px}.chk{display:flex!important;grid-auto-flow:column;align-items:center;gap:8px!important}
-.pickbox{border-color:var(--acc)}.pickbox b{font-size:18px;display:block;margin:2px 0}.why{background:var(--bg);border-left:3px solid var(--acc);padding:6px 10px;border-radius:0 8px 8px 0;font-size:14px;margin-top:6px}.badge{background:var(--acc);color:#fff;border-radius:6px;padding:0 6px;font-size:12px}
-.mini{width:48px;height:72px;object-fit:cover;border-radius:8px;background:var(--line);flex:none}
-.toast{position:fixed;left:16px;right:16px;bottom:16px;max-width:520px;margin:0 auto;background:var(--ink);color:var(--bg);border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;gap:12px;align-items:center}
-.toast button{background:transparent;color:inherit;border-color:currentColor;min-height:36px}
-.gate{max-width:420px;margin:15vh auto;text-align:center}.gate input{width:100%;font:inherit;min-height:48px;padding:0 12px;margin:12px 0;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.focus{display:grid;gap:16px}
+.card h2{font:600 16px/22px var(--font);display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 var(--sp-3)}
+.stack{display:grid;gap:var(--sp-2)}
+.row{display:flex;gap:var(--sp-3);align-items:center;flex-wrap:wrap;padding:var(--sp-3);background:var(--surface-1);border-radius:var(--r-xl)}
+.row.past{opacity:.5}.row.now{outline:2px solid var(--positive)}
+.row .time{font:600 16px/22px var(--font);min-width:52px;font-variant-numeric:tabular-nums}
+.grow{flex:1;min-width:140px}
+.acts{display:flex;gap:var(--sp-2);flex-wrap:wrap}
+.btn.sm{height:32px;padding:0 12px;font-size:13px;border-radius:var(--r-s)}
+.card.urgent{box-shadow:inset 0 0 0 2px var(--negative)}
+.day{margin:var(--sp-3) 0 var(--sp-2)}
+.film{display:flex;gap:var(--sp-4)}
+.film img{width:96px;height:144px;object-fit:cover;border-radius:var(--r-l);background:var(--surface-2);flex:none}
+.mini{width:48px;height:72px;object-fit:cover;border-radius:var(--r-s);background:var(--surface-2);flex:none}
+.chips{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin:var(--sp-1) 0 var(--sp-2)}
+.chip-i input{position:absolute;opacity:0;pointer-events:none}
+.chip-i span{display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:var(--r-pill);background:var(--surface-1);color:var(--text-primary);font:500 14px/18px var(--font);cursor:pointer;transition:background var(--t-base) var(--ease-std)}
+.chip-i input:checked+span{background:var(--surface-dark);color:var(--on-surface-dark)}
+.chip-i input:focus-visible+span{outline:2px solid var(--accent)}
+.frow{display:flex;flex-wrap:wrap;gap:var(--sp-3);align-items:flex-end;margin-top:var(--sp-3)}
+.frow label{display:grid;gap:var(--sp-1);font:400 14px/20px var(--font);color:var(--text-secondary)}
+.frow .select{height:40px;min-width:180px}
+.pickbox{background:var(--accent-soft)}
+.pickbox b{font:600 20px/26px var(--font);display:block;margin:2px 0}
+.why{background:var(--surface-1);border-left:3px solid var(--accent);padding:var(--sp-2) var(--sp-3);border-radius:0 var(--r-m) var(--r-m) 0;margin-top:var(--sp-2)}
+.sections{grid-template-columns:repeat(2,1fr)}
+@media(min-width:900px){.sections{grid-template-columns:1fr}}
+.err{color:var(--text-negative)}
+.gate{max-width:420px;margin:15vh auto;text-align:center;display:grid;gap:var(--sp-3);padding:0 var(--sp-4)}
 [hidden]{display:none!important}
+.toast{max-width:520px}
+.toast .btn{background:transparent;color:inherit;border:1px solid currentColor;height:32px}
 </style>
 </head>
 <body>
 <div id="gate" class="gate" hidden>
-  <h1>Введите код доступа</h1>
-  <p class="sub">Или откройте ссылку с кодом ещё раз.</p>
-  <input id="gateCode" placeholder="Код" autocomplete="off">
-  <button class="pri" id="gateOk">Войти</button>
-  <p class="err" id="gateErr"></p>
+  <h1 class="t-h1">Введите код доступа</h1>
+  <p class="t-text-s t-muted">Или откройте ссылку с кодом ещё раз.</p>
+  <input id="gateCode" class="input" placeholder="Код" autocomplete="off">
+  <button class="btn btn-primary btn-block" id="gateOk">Войти</button>
+  <p class="err t-text-s" id="gateErr"></p>
 </div>
+<header class="app-header" id="appHeader" hidden><span class="app-title">Семья</span><span class="t-text-s t-muted" id="hSum"></span></header>
 <div id="app" class="wrap" hidden>
-  <div class="head"><h1 id="hDate"></h1><p id="hSum"></p></div>
+  <div class="head"><h1 class="t-h1" id="hDate" style="margin:0"></h1></div>
   <main class="focus" id="focus"></main>
-  <aside class="plates" id="plates"></aside>
+  <aside class="sections" id="plates"></aside>
 </div>
 <div id="toast" class="toast" hidden></div>
 <script src="логика.js"></script>
@@ -74,7 +69,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<
 const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
 let KEY = lsGet(KEY_LS), RULES = null;
-const S = { kids: null, health: null, film: null, mode: lsGet("dash_mode") || "family", form: false, undo: false, view: null, bet: null, rec: null, recBusy: false, recErr: null, form2: null };
+const S = { kids: null, health: null, film: null, fin: null, mode: lsGet("dash_mode") || "family", form: false, undo: false, view: null, bet: null, rec: null, recBusy: false, recErr: null, form2: null };
 window.addEventListener("hashchange", () => { S.view = location.hash === "#film" ? "film" : null; render(); });
 
 async function api(fn, action, payload) {
@@ -99,9 +94,10 @@ async function boot() {
   if (!KEY) return showGate();
   try { await api("dash", "ping"); }
   catch (e) { if (e.forbidden) { lsSet(KEY_LS, null); KEY = null; return showGate("Код не подошёл — откройте ссылку с кодом ещё раз."); }
-    $("app").hidden = false; $("focus").innerHTML = `<div class="card">Нет связи · <button class="sm" onclick="location.reload()">Повторить</button></div>`; return; }
+    $("app").hidden = false; $("focus").innerHTML = `<div class="card">Нет связи · <button class="btn btn-secondary sm" onclick="location.reload()">Повторить</button></div>`; return; }
   RULES = await (await fetch("плашки.json")).json();
-  $("gate").hidden = true; $("app").hidden = false;
+  $("gate").hidden = true; $("app").hidden = false; $("appHeader").hidden = false;
+  fetch("icons.svg").then((r) => r.text()).then((t) => { const d = document.createElement("div"); d.style.display = "none"; d.innerHTML = t; document.body.prepend(d); }).catch(() => {});
   S.view = location.hash === "#film" ? "film" : null;
   renderPlates(); load();
   document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
@@ -123,6 +119,7 @@ async function load() {
     S.health = { items: Dash.healthItems(m.data), states };
     render();
   }).catch(() => { S.health = { error: true }; render(); });
+  api("dash", "finance").then((j) => { S.fin = j; render(); }).catch((e) => { S.fin = { error: e.message }; render(); });
   api("dash", "films_pick", { mode: S.mode }).then((j) => { S.film = j; S.bet = null; render(); }).catch(() => { S.film = { error: true }; render(); });
 }
 
@@ -142,8 +139,8 @@ function render() {
   if (hc) parts.push(hc.total ? `${hc.total} ${plural(hc.total, "дело", "дела", "дел")} по здоровью` : "по здоровью спокойно");
   if (film) parts.push("фильм подобран");
   $("hSum").textContent = parts.join(" · ");
-  if (S.view === "film") { $("focus").innerHTML = filmView(); $("plates").hidden = true; bind(); return; }
-  $("plates").hidden = false;
+  if (S.view === "film") { $("focus").innerHTML = filmView(); $("plates").hidden = true; $("fin").hidden = true; bind(); return; }
+  $("plates").hidden = false; $("fin").hidden = false; $("fin").innerHTML = finCard();
   const html = { kids: kidsCard(view), health: healthCardHtml(hc, order.urgent), film: filmCard() };
   $("focus").innerHTML = order.order.map((k) => order.collapsed.includes(k) && html[k].fold ? `<div class="card folded">${html[k].fold}</div>` : html[k].full).join("");
   bind();
@@ -151,106 +148,120 @@ function render() {
 const plural = (n, a, b, c) => { const m = n % 100, d = n % 10; return m > 10 && m < 15 ? c : d === 1 ? a : d > 1 && d < 5 ? b : c; };
 
 function kidsCard(v) {
-  if (!S.kids) return { full: `<div class="card"><h2>Дети</h2><span class="sub">Загружаю…</span></div>`, fold: "" };
-  if (S.kids.error) return { full: `<div class="card"><h2>Дети</h2>Календарь не отвечает · <button class="sm" data-act="reload">Повторить</button></div>` };
+  if (!S.kids) return { full: `<div class="card"><h2>Дети</h2><span class="t-text-s t-muted">Загружаю…</span></div>`, fold: "" };
+  if (S.kids.error) return { full: `<div class="card"><h2>Дети</h2>Календарь не отвечает · <button class="btn btn-secondary sm" data-act="reload">Повторить</button></div>` };
   const col = { dima: "var(--dima)", danya: "var(--danya)", family: "var(--family)" };
   const rows = (arr, empty) => arr.length ? arr.map((r) => `<div class="row ${r.status}">
-      <span class="time">${esc(r.time)}</span><span class="dot" style="background:${col[r.child]}"></span>
-      <div class="grow"><div>${esc(r.childName)} · ${esc(r.title)}</div><div class="sub">${esc([r.until, r.place].filter(Boolean).join(" · "))}</div></div>
-      ${r.id ? `<div class="acts"><button class="sm" data-act="move" data-id="${esc(r.id)}">Перенести</button><button class="sm" data-act="cancel" data-id="${esc(r.id)}">Отменить</button></div>` : ""}</div>`).join("") : `<div class="sub">${empty}</div>`;
+      <span class="time">${esc(r.time)}</span><span class="tag ${r.child === "family" ? "tag--gray" : ""}" style="${r.child === "danya" ? "background:var(--accent-soft);color:var(--text-accent-2)" : ""}">${esc(r.childName)}</span>
+      <div class="grow"><div class="t-bold">${esc(r.title)}</div><div class="t-text-s t-muted">${esc([r.until, r.place].filter(Boolean).join(" · "))}</div></div>
+      ${r.id ? `<div class="acts"><button class="btn btn-secondary sm" data-act="move" data-id="${esc(r.id)}">Перенести</button><button class="btn btn-secondary sm" data-act="cancel" data-id="${esc(r.id)}">Отменить</button></div>` : ""}</div>`).join("") : `<div class="t-text-s t-muted">${empty}</div>`;
   const withIds = (arr) => arr.map((r) => Object.assign(r, { id: (S.kids.events.find((e) => e.start === r.start && e.title === r.title) || {}).id }));
-  return { fold: `Дети: ${v.today.length + v.tomorrow.length ? "занятия есть" : "занятий нет"}`, full: `<div class="card"><h2>Дети — сегодня и завтра <button class="sm" data-act="add">+ Занятие</button></h2>
-    <div class="day">Сегодня</div>${rows(withIds(v.today), "Сегодня без занятий")}
-    <div class="day">Завтра</div>${rows(withIds(v.tomorrow), "Завтра без занятий")}
+  return { fold: `Дети: ${v.today.length + v.tomorrow.length ? "занятия есть" : "занятий нет"}`, full: `<div class="card"><h2>Дети — сегодня и завтра <button class="btn btn-secondary sm" data-act="add">+ Занятие</button></h2>
+    <div class="day t-text-xs t-muted">Сегодня</div>${rows(withIds(v.today), "Сегодня без занятий")}
+    <div class="day t-text-xs t-muted">Завтра</div>${rows(withIds(v.tomorrow), "Завтра без занятий")}
     ${S.form ? addForm() : ""}</div>` };
+}
+const rub = (n) => Math.round(n).toLocaleString("ru-RU").replace(/\u00a0/g, " ") + " ₽";
+const MON = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+function finCard() {
+  const F = S.fin;
+  if (!F) return `<div class="card"><h2>Финансы с начала года</h2><span class="t-text-s t-muted">Загружаю…</span></div>`;
+  if (F.error) return `<div class="card"><h2>Финансы с начала года</h2>${F.error === "no_finance" ? "Сводка ещё не загружена" : "Финансы недоступны"} · <button class="btn btn-secondary sm" data-act="reload">Повторить</button></div>`;
+  const d = (iso) => `${+iso.slice(8)} ${MON[+iso.slice(5, 7) - 1]}`;
+  const mx = Math.max(...F.months.map((m) => m.life), 1), cmax = Math.max(...F.cats.map((c) => c.sum), 1);
+  const last = F.as_of.slice(0, 7);
+  const months = F.months.map((m) => `<div class="bar ${m.m === last ? "part" : ""}"><span>${MON[+m.m.slice(5) - 1]}${m.m === last ? " (до " + +F.as_of.slice(8) + ")" : ""}</span><i style="width:${m.life / mx * 100}%"></i><em>${rub(m.life)}</em></div>`).join("");
+  const top = F.cats.slice(0, 12), rest = F.cats.slice(12).reduce((a, c) => a + c.sum, 0);
+  const cats = top.concat(rest ? [{ name: "Остальное", sum: rest }] : []).map((c) => `<div class="bar cat"><span>${esc(c.name)}</span><i style="width:${c.sum / cmax * 100}%"></i><em>${rub(c.sum)} · ${Math.round(c.sum / F.life * 100)}%</em></div>`).join("");
+  return `<div class="card"><h2>Финансы с начала года <small class="t-text-s t-muted">${d(F.from)} – ${d(F.as_of)} ${F.as_of.slice(0, 4)}</small></h2>
+    <div class="kpi"><div><b>${rub(F.life)}</b><span>расходы на жизнь</span></div><div><b>${rub(F.avg_month)}</b><span>в среднем за месяц (${F.full_months} полных)</span></div>
+      <div><b>${rub(F.invest)}</b><span>отложено в инвестиции</span></div><div><b>${rub(F.mortgage_prepay)}</b><span>досрочно по ипотеке</span></div></div>
+    <div class="cols"><div><div class="day t-text-xs t-muted">По месяцам</div>${months}</div><div><div class="day t-text-xs t-muted">По категориям</div>${cats}</div></div>
+    <div class="t-text-s t-muted" style="margin-top:10px">Без переводов между счетами, инвестиций и ипотеки. Рента за период: ${rub(F.rent)}. Обновлено ${esc(d(F.updated_at.slice(0, 10)))}.</div></div>`;
 }
 function addForm() {
   const d = new Date(Date.now() + 3 * 3600e3 + 86400e3).toISOString().slice(0, 10);
   return `<form class="add" id="addForm">
-    <select name="child"><option value="dima">Дима</option><option value="danya">Даня</option><option value="family">Семья</option></select>
-    <input name="title" placeholder="Название, например Шахматы" required>
-    <input name="date" type="date" value="${d}" required><input name="time" type="time" value="17:00" required>
-    <input name="minutes" type="number" min="5" max="600" value="60" aria-label="Длительность, минут">
-    <select name="weekly"><option value="">Один раз</option><option value="1">Каждую неделю</option></select>
-    <input name="place" placeholder="Место (необязательно)">
+    <select class="select" name="child"><option value="dima">Дима</option><option value="danya">Даня</option><option value="family">Семья</option></select>
+    <input class="input" name="title" placeholder="Название, например Шахматы" required>
+    <input class="input" name="date" type="date" value="${d}" required><input class="input" name="time" type="time" value="17:00" required>
+    <input class="input" name="minutes" type="number" min="5" max="600" value="60" aria-label="Длительность, минут">
+    <select class="select" name="weekly"><option value="">Один раз</option><option value="1">Каждую неделю</option></select>
+    <input class="input" name="place" placeholder="Место (необязательно)">
     <div class="err" id="addErr"></div>
-    <div class="acts"><button class="pri" type="submit">Записать в календарь</button><button type="button" data-act="close">Отмена</button></div></form>`;
+    <div class="acts"><button class="btn btn-primary" type="submit">Записать в календарь</button><button type="button" class="btn btn-secondary" data-act="close">Отмена</button></div></form>`;
 }
 function healthCardHtml(c, urgent) {
-  if (!S.health) return { full: `<div class="card"><h2>Здоровье</h2><span class="sub">Загружаю…</span></div>`, fold: "" };
-  if (S.health.error) return { full: `<div class="card"><h2>Здоровье</h2>Здоровье недоступно · <button class="sm" data-act="reload">Повторить</button></div>` };
-  if (!c.rows.length) return { full: `<div class="card"><h2>Здоровье</h2><span class="sub">Ближайших дел нет</span></div>`, fold: "Здоровье: ближайших дел нет" };
-  const rows = c.rows.map((r, i) => `<div class="row"><div class="grow"><div><b>${esc(r.who)}</b> · ${esc(r.title)}</div><div class="sub">${esc(r.status)}</div></div>
-    <div class="acts"><button class="sm" data-act="booked" data-i="${i}">Записан</button><button class="sm" data-act="done" data-i="${i}">Готово</button><button class="sm" data-act="snooze" data-i="${i}">Через неделю</button></div></div>`).join("");
-  return { fold: "", full: `<div class="card ${urgent ? "urgent" : ""}"><h2>Здоровье ${urgent ? '<span class="tag">Срочно</span>' : ""}</h2>${rows}<div class="acts" style="margin-top:8px"><a class="btn sm" href="${esc(medUrl())}">Открыть в медкнижке</a></div></div>` };
+  if (!S.health) return { full: `<div class="card"><h2>Здоровье</h2><span class="t-text-s t-muted">Загружаю…</span></div>`, fold: "" };
+  if (S.health.error) return { full: `<div class="card"><h2>Здоровье</h2>Здоровье недоступно · <button class="btn btn-secondary sm" data-act="reload">Повторить</button></div>` };
+  if (!c.rows.length) return { full: `<div class="card"><h2>Здоровье</h2><span class="t-text-s t-muted">Ближайших дел нет</span></div>`, fold: "Здоровье: ближайших дел нет" };
+  const rows = c.rows.map((r, i) => `<div class="row"><div class="grow"><div class="t-bold">${esc(r.title)}</div><div style="margin-top:4px"><span class="tag">${esc(r.who)}</span> <span class="status ${r.days < 0 ? "status-bad" : r.days <= 3 ? "status-warn" : "status-ok"}">${esc(r.status)}</span></div></div>
+    <div class="acts"><button class="btn btn-secondary sm" data-act="booked" data-i="${i}">Записан</button><button class="btn btn-secondary sm" data-act="done" data-i="${i}">Готово</button><button class="btn btn-secondary sm" data-act="snooze" data-i="${i}">Через неделю</button></div></div>`).join("");
+  return { fold: "", full: `<div class="card ${urgent ? "urgent" : ""}"><h2>Здоровье ${urgent ? '<span class="status status-bad">Срочно</span>' : ""}</h2>${rows}<div class="acts" style="margin-top:8px"><a class="btn btn-secondary sm" href="${esc(medUrl())}">Открыть в медкнижке</a></div></div>` };
 }
 function medUrl() { const p = RULES.find((x) => x.withCode); return p.url + (KEY ? "?k=" + encodeURIComponent(KEY) : ""); }
 const MODE_LABEL = { solo: "Я один", couple: "С Аней", family: "Всей семьёй", kids: "Только дети" };
 const MOODS = [["лёгкое, чтобы не думать", "Лёгкое"], ["смешное", "Посмеяться"], ["фантастика с идеей", "Фантастика"], ["приключения", "Приключения"], ["напряжённый триллер", "Триллер"],
   ["криминал без российских ментов", "Криминал"], ["драма, чтобы подумать", "Драма"], ["страшное", "Ужасы"], ["мюзикл", "Мюзикл"], ["аниме", "Аниме"],
   ["советская классика", "Советское"], ["сериал", "Сериал"], ["короткое, до 90 минут", "Короткое"], ["удиви меня чем-то неожиданным", "Удиви"]];
-function modeBar() { return `<div class="acts">${Object.keys(MODE_LABEL).map((m) => `<button class="sm ${S.mode === m ? "pri" : ""}" data-act="mode" data-m="${m}">${MODE_LABEL[m]}</button>`).join("")}</div>`; }
-function filmMeta(f) {
-  const rt = f.rating ? "Кинопоиск " + String(f.rating).replace(".", ",") : f.my_rating != null ? "" : "рейтинг не проверен";
-  return [f.year, f.genre, f.minutes ? f.minutes + " мин" : f.runtime, f.age != null && f.age !== "" ? f.age + "+" : "", rt].filter(Boolean).map(esc).join(" · ");
-}
+function modeBar() { return `<div class="seg" style="flex-wrap:wrap">${Object.keys(MODE_LABEL).map((m) => `<button type="button" class="${S.mode === m ? "is-active" : ""}" data-act="mode" data-m="${m}">${MODE_LABEL[m]}</button>`).join("")}</div>`; }
 function pickFilm(F) { if (!F || !F.new) return null; const list = F.new; if (S.bet != null && list[S.bet]) return { f: list[S.bet], reason: list[S.bet].why }; const p = F.pick && list.find((f) => f.title === F.pick.title && f.year === F.pick.year); return p ? { f: p, reason: F.pick.reason } : list[0] ? { f: list[0], reason: list[0].why } : null; }
 function filmCard() {
   const FF = S.film;
-  if (!FF) return { full: `<div class="card" id="film"><h2>Фильм на вечер</h2><span class="sub">Подбираю по вашим оценкам… один раз в день, до минуты</span></div>`, fold: "" };
-  if (FF.error) return { full: `<div class="card" id="film"><h2>Фильм на вечер</h2>Фильм не подобрался · <button class="sm" data-act="reload">Повторить</button>${modeBar()}</div>`, fold: "" };
+  if (!FF) return { full: `<div class="card" id="film"><h2>Фильм на вечер</h2><span class="t-text-s t-muted">Подбираю по вашим оценкам… один раз в день, до минуты</span></div>`, fold: "" };
+  if (FF.error) return { full: `<div class="card" id="film"><h2>Фильм на вечер</h2>Фильм не подобрался · <button class="btn btn-secondary sm" data-act="reload">Повторить</button>${modeBar()}</div>`, fold: "" };
   const pk = pickFilm(FF);
-  if (!pk) return { full: `<div class="card" id="film"><h2>Фильм на вечер <button class="sm" data-act="film-all">Подбор →</button></h2>Подходящего не нашлось. <button class="sm" data-act="refresh">Подобрать заново</button>${modeBar()}</div>`, fold: "Фильм: вариантов нет" };
+  if (!pk) return { full: `<div class="card" id="film"><h2>Фильм на вечер <button class="btn btn-secondary sm" data-act="film-all">Подбор →</button></h2>Подходящего не нашлось. <button class="btn btn-secondary sm" data-act="refresh">Подобрать заново</button>${modeBar()}</div>`, fold: "Фильм: вариантов нет" };
   const f = pk.f;
-  return { fold: "", full: `<div class="card" id="film"><h2>Фильм на вечер <button class="sm" data-act="film-all">Весь подбор →</button></h2>${modeBar()}
+  return { fold: "", full: `<div class="card" id="film"><h2>Фильм на вечер <button class="btn btn-secondary sm" data-act="film-all">Весь подбор →</button></h2>${modeBar()}
     <div class="film" style="margin-top:10px">${f.poster ? `<img src="${esc(f.poster)}" alt="">` : `<img alt="">`}
-      <div><h3>${esc(f.title)}</h3><div class="sub">${filmMeta(f)}</div>
-      <p>${esc(pk.reason || f.why || "")}</p>${f.description ? `<p class="sub">${esc(f.description)}</p>` : ""}
-      <div class="acts"><button class="pri sm" data-act="watch">Смотрим</button>${FF.new.length > 1 ? '<button class="sm" data-act="next">Другой</button>' : ""}${f.wiki ? `<a class="btn sm" href="${esc(f.wiki)}" target="_blank" rel="noopener">Подробнее</a>` : ""}</div></div></div></div>` };
+      <div><h3>${esc(f.title)}</h3><div class="t-text-s t-muted">${filmMeta(f)}</div>
+      <p>${esc(pk.reason || f.why || "")}</p>${f.description ? `<p class="t-text-s t-muted">${esc(f.description)}</p>` : ""}
+      <div class="acts"><button class="btn btn-primary sm" data-act="watch">Смотрим</button>${FF.new.length > 1 ? '<button class="btn btn-secondary sm" data-act="next">Другой</button>' : ""}${f.wiki ? `<a class="btn btn-secondary sm" href="${esc(f.wiki)}" target="_blank" rel="noopener">Подробнее</a>` : ""}</div></div></div></div>` };
 }
 function filmCardFull(f, rewatch, blk, i) {
   const title = f.wiki ? `<a href="${esc(f.wiki)}" target="_blank" rel="noopener">${esc(f.title)}</a>` : esc(f.title);
-  const orig = f.original_title && f.original_title !== f.title ? ` <span class="sub">(${esc(f.original_title)})</span>` : "";
+  const orig = f.original_title && f.original_title !== f.title ? ` <span class="t-text-s t-muted">(${esc(f.original_title)})</span>` : "";
   const badge = rewatch && f.my_rating != null ? ` <span class="badge">моя ${esc(f.my_rating)}</span>` : "";
   return `<div class="row"><img class="mini" src="${esc(f.poster || "")}" alt="" loading="lazy">
-    <div class="grow"><div><b>${title}</b>${orig}${badge}</div><div class="sub">${filmMeta(f)}</div>
-      ${f.description ? `<div class="sub" style="margin-top:4px">${esc(f.description)}</div>` : ""}
+    <div class="grow"><div><b>${title}</b>${orig}${badge}</div><div class="t-text-s t-muted">${filmMeta(f)}</div>
+      ${f.description ? `<div class="t-text-s t-muted" style="margin-top:4px">${esc(f.description)}</div>` : ""}
       ${f.why ? `<div class="why"><b>Почему тебе:</b> ${esc(f.why)}</div>` : ""}</div>
-    <div class="acts"><button class="sm" data-act="watch">Смотрим</button><button class="sm" data-act="seen" data-b="${blk}" data-i="${i}">Уже смотрел</button></div></div>`;
+    <div class="acts"><button class="btn btn-secondary sm" data-act="watch">Смотрим</button><button class="btn btn-secondary sm" data-act="seen" data-b="${blk}" data-i="${i}">Уже смотрел</button></div></div>`;
 }
 function filmSection(title, list, rewatch, blk, empty) {
   const idx = (f) => list.indexOf(f);
   const films = list.filter((f) => f.kind !== "animation"), anim = list.filter((f) => f.kind === "animation");
   let h = `<div class="card"><h2>${title}</h2>`;
-  if (!list.length) return h + `<div class="sub">${empty}</div></div>`;
-  if (films.length) h += `<div class="day">Фильмы</div>${films.map((f) => filmCardFull(f, rewatch, blk, idx(f))).join("")}`;
-  if (anim.length) h += `<div class="day">Мультфильмы</div>${anim.map((f) => filmCardFull(f, rewatch, blk, idx(f))).join("")}`;
+  if (!list.length) return h + `<div class="t-text-s t-muted">${empty}</div></div>`;
+  if (films.length) h += `<div class="day t-text-xs t-muted">Фильмы</div>${films.map((f) => filmCardFull(f, rewatch, blk, idx(f))).join("")}`;
+  if (anim.length) h += `<div class="day t-text-xs t-muted">Мультфильмы</div>${anim.map((f) => filmCardFull(f, rewatch, blk, idx(f))).join("")}`;
   return h + "</div>";
 }
 function filmForm() {
   const F = S.form2 || { mode: S.mode, moods: [], wish: "", format: "any", count: "8", rewatch: true };
-  return `<form class="card" id="recForm"><h2><button type="button" class="sm" data-act="film-back">← Назад</button><span>Что посмотрим сегодня?</span></h2>
-    <div class="sub">Подбор по моим оценкам: нейросеть знает весь список просмотренного и не предлагает виденное.</div>
-    <div class="day">Кто смотрит</div><div class="chips">${Object.keys(MODE_LABEL).map((m) => `<label class="chip"><input type="radio" name="mode" value="${m}" ${F.mode === m ? "checked" : ""}><span>${MODE_LABEL[m]}</span></label>`).join("")}</div>
-    <div class="day">Настроение и жанр — можно несколько</div><div class="chips">${MOODS.map(([v, l]) => `<label class="chip"><input type="checkbox" name="mood" value="${esc(v)}" ${F.moods.includes(v) ? "checked" : ""}><span>${l}</span></label>`).join("")}</div>
-    <div class="day">Чего хочется — своими словами</div>
-    <textarea name="wish" rows="3" placeholder="Например: что-то похожее на «Трассу 60», но посвежее. Или: вечер пятницы, устал, хочется доброго и смешного">${esc(F.wish)}</textarea>
-    <div class="frow"><label>Формат<select name="format"><option value="any" ${F.format === "any" ? "selected" : ""}>Фильмы и мультфильмы</option><option value="films" ${F.format === "films" ? "selected" : ""}>Только фильмы и сериалы</option><option value="animation" ${F.format === "animation" ? "selected" : ""}>Только мультфильмы</option></select></label>
-      <label>Сколько нового<select name="count">${["5", "8", "10"].map((n) => `<option ${F.count === n ? "selected" : ""}>${n}</option>`).join("")}</select></label>
+  return `<form class="card" id="recForm"><h2><button type="button" class="btn btn-secondary sm" data-act="film-back">← Назад</button><span>Что посмотрим сегодня?</span></h2>
+    <div class="t-text-s t-muted">Подбор по моим оценкам: нейросеть знает весь список просмотренного и не предлагает виденное.</div>
+    <div class="day t-text-xs t-muted">Кто смотрит</div><div class="chips">${Object.keys(MODE_LABEL).map((m) => `<label class="chip-i"><input type="radio" name="mode" value="${m}" ${F.mode === m ? "checked" : ""}><span>${MODE_LABEL[m]}</span></label>`).join("")}</div>
+    <div class="day t-text-xs t-muted">Настроение и жанр — можно несколько</div><div class="chips">${MOODS.map(([v, l]) => `<label class="chip-i"><input type="checkbox" name="mood" value="${esc(v)}" ${F.moods.includes(v) ? "checked" : ""}><span>${l}</span></label>`).join("")}</div>
+    <div class="day t-text-xs t-muted">Чего хочется — своими словами</div>
+    <textarea class="textarea" name="wish" rows="3" placeholder="Например: что-то похожее на «Трассу 60», но посвежее. Или: вечер пятницы, устал, хочется доброго и смешного">${esc(F.wish)}</textarea>
+    <div class="frow"><label>Формат<select class="select" name="format"><option value="any" ${F.format === "any" ? "selected" : ""}>Фильмы и мультфильмы</option><option value="films" ${F.format === "films" ? "selected" : ""}>Только фильмы и сериалы</option><option value="animation" ${F.format === "animation" ? "selected" : ""}>Только мультфильмы</option></select></label>
+      <label>Сколько нового<select class="select" name="count">${["5", "8", "10"].map((n) => `<option ${F.count === n ? "selected" : ""}>${n}</option>`).join("")}</select></label>
       <label class="chk"><input type="checkbox" name="rewatch" ${F.rewatch ? "checked" : ""}> Добавить «ещё вспомним»</label></div>
-    <div class="acts" style="margin-top:12px"><button class="pri" type="submit" ${S.recBusy ? "disabled" : ""}>${S.recBusy ? "Подбираю…" : "Подобрать"}</button></div></form>`;
+    <div class="acts" style="margin-top:12px"><button class="btn btn-primary" type="submit" ${S.recBusy ? "disabled" : ""}>${S.recBusy ? "Подбираю…" : "Подобрать"}</button></div></form>`;
 }
 function filmResults(D) {
-  if (S.recBusy) return `<div class="card"><span class="sub">Нейросеть листает ваш список и подбирает… обычно 20–60 секунд.</span></div>`;
+  if (S.recBusy) return `<div class="card"><span class="t-text-s t-muted">Нейросеть листает ваш список и подбирает… обычно 20–60 секунд.</span></div>`;
   if (S.recErr) return `<div class="card err">Не получилось: ${esc(S.recErr)}</div>`;
-  if (!D) return `<div class="card"><span class="sub">Подбираю ставку на сегодня…</span></div>`;
+  if (!D) return `<div class="card"><span class="t-text-s t-muted">Подбираю ставку на сегодня…</span></div>`;
   let h = "";
-  if (D.pick && D.pick.title) h += `<div class="card pickbox"><div class="sub">Ставка на сегодня</div><b>${esc(D.pick.title)}</b><div>${esc(D.pick.reason)}</div></div>`;
+  if (D.pick && D.pick.title) h += `<div class="card pickbox"><div class="t-text-s t-muted">Ставка на сегодня</div><b>${esc(D.pick.title)}</b><div>${esc(D.pick.reason)}</div></div>`;
   if (D.note) h += `<div class="card sub">${esc(D.note)}</div>`;
   h += filmSection("Не смотрел", D.new || [], false, "new", "Под такой запрос нового не нашлось — попробуйте ослабить условия.");
   if ((D.rewatch || []).length || (S.form2 ? S.form2.rewatch : true)) h += filmSection("Ещё вспомним", D.rewatch || [], true, "rewatch", "Из просмотренного с оценкой 7+ под запрос ничего не подошло.");
   const dropped = D.dropped && D.dropped.length ? ` Убрал как уже виденное: ${D.dropped.map(esc).join(", ")}.` : "";
-  h += `<div class="sub" style="padding:0 4px">Модель: ${esc(D.model || "")} · в списке просмотренного ${esc(D.watched_count || "")} позиций.${dropped}</div>`;
+  h += `<div class="t-text-s t-muted" style="padding:0 4px">Модель: ${esc(D.model || "")} · в списке просмотренного ${esc(D.watched_count || "")} позиций.${dropped}</div>`;
   return h;
 }
 function filmView() {
@@ -258,7 +269,7 @@ function filmView() {
   return filmForm() + filmResults(D && !D.error ? D : null);
 }
 function renderPlates() {
-  $("plates").innerHTML = RULES.map((p) => `<a class="btn plate ${p.url ? "" : "soon"}" href="${esc(p.withCode ? medUrl() : p.url || "#")}"><span class="ic">${p.icon}</span><b>${esc(p.title)}</b><span>${p.url ? esc(p.caption) : "Скоро"}</span></a>`).join("");
+  $("plates").innerHTML = RULES.map((p) => `<a class="section-tile ${p.url ? "" : "t-muted"}" href="${esc(p.withCode ? medUrl() : p.url || "#")}"><span class="section-tile__ic"><svg class="ic" aria-hidden="true"><use href="#i-${esc(p.ic || "star")}"/></svg></span><b>${esc(p.title)}</b><span class="t-text-s t-muted">${p.url ? esc(p.caption) : "Скоро"}</span></a>`).join("");
 }
 
 // ── действия ──

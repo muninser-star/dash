@@ -3,31 +3,36 @@
     "title": "Подбор фильмов",
     "caption": "Что посмотреть",
     "url": "#film",
-    "icon": "🎬"
+    "icon": "🎬",
+    "ic": "star"
   },
   {
     "title": "Медкнижка",
     "caption": "Здоровье семьи",
     "url": "https://muninser-star.github.io/mk-site/v2/",
     "icon": "🩺",
-    "withCode": true
+    "withCode": true,
+    "ic": "card"
   },
   {
     "title": "Инструменты",
     "caption": "Всё под рукой",
     "url": "https://muninser-star.github.io/tools-catalog/",
-    "icon": "🧰"
+    "icon": "🧰",
+    "ic": "settings"
   },
   {
     "title": "Занятия с Димой",
     "caption": "Учимся дома",
     "url": "https://muninser-star.github.io/LFK/",
-    "icon": "🤸"
+    "icon": "🤸",
+    "ic": "dynamics"
   },
   {
     "title": "Приключения с Димой",
     "caption": "Вылазки и квесты",
     "url": "adventures/",
-    "icon": "🧭"
+    "icon": "🧭",
+    "ic": "search"
   }
 ]

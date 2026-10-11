@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
 <title>Приключения</title>
-<style>:root{--bg:#f6f5f2;--card:#fff;--ink:#1d1d1b;--mut:#6b6a66;--line:#e4e2dc}@media(prefers-color-scheme:dark){:root{--bg:#141413;--card:#1e1e1c;--ink:#f1efe9;--mut:#a09e97;--line:#33322f}}
-body{margin:0;padding:16px;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,Segoe UI,Roboto,sans-serif}main{max-width:640px;margin:0 auto;display:grid;gap:12px}
-a{display:block;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;color:inherit;text-decoration:none;min-height:72px}a b{font-size:18px}a span{display:block;color:var(--mut);font-size:14px}h1{font-size:22px}.back{background:none;border:0;padding:0;color:var(--mut)}</style></head>
-<body><main><a class="back" href="../">← Семья</a><h1>Приключения с Димой</h1><div id="list"></div></main>
-<script>fetch("../приключения.json").then(r=>r.json()).then(l=>{document.getElementById("list").innerHTML=l.map(x=>`<a href="${x.url}" style="margin-bottom:12px"><b>${x.icon} ${x.title}</b><span>${x.caption}</span></a>`).join("")})</script>
+<link rel="stylesheet" href="../токены.css">
+<style>main{max-width:var(--content);margin:0 auto;padding:var(--sp-4);display:grid;gap:var(--sp-3)}.sections{grid-template-columns:1fr}.section-tile{min-height:88px}</style></head>
+<body><header class="app-header"><a class="back" href="../">← Семья</a><span class="app-title">Приключения с Димой</span></header>
+<main><div class="sections" id="list"></div></main>
+<script>fetch("../приключения.json").then(r=>r.json()).then(l=>{document.getElementById("list").innerHTML=l.map(x=>`<a class="section-tile" href="${x.url}"><b>${x.icon} ${x.title}</b><span class="t-text-s t-muted">${x.caption}</span></a>`).join("")})</script>
 </body></html>
