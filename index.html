@@ -39,6 +39,10 @@ body{padding-bottom:max(24px,env(safe-area-inset-bottom))}
 .why{background:var(--surface-1);border-left:3px solid var(--accent);padding:var(--sp-2) var(--sp-3);border-radius:0 var(--r-m) var(--r-m) 0;margin-top:var(--sp-2)}
 .sections{grid-template-columns:repeat(2,1fr)}
 @media(min-width:900px){.sections{grid-template-columns:1fr}}
+.fin{grid-column:1/-1}.fin h2 small{font-weight:400;margin-left:var(--sp-2)}
+.fin .fcols{display:grid;gap:var(--sp-5)}@media(min-width:900px){.fin .fcols{grid-template-columns:1fr 1fr}}
+.fbar{display:grid;grid-template-columns:84px 1fr auto;gap:var(--sp-2);align-items:center;padding:3px 0;font:400 14px/20px var(--font)}.fbar.cat{grid-template-columns:minmax(110px,1.1fr) 2fr auto}
+.fbar i{display:block;height:10px;border-radius:5px;background:var(--accent);min-width:2px}.fbar.part i{opacity:.45}.fbar em{font-style:normal;font-variant-numeric:tabular-nums;color:var(--text-secondary);text-align:right}
 .err{color:var(--text-negative)}
 .gate{max-width:420px;margin:15vh auto;text-align:center;display:grid;gap:var(--sp-3);padding:0 var(--sp-4)}
 [hidden]{display:none!important}
@@ -59,6 +63,7 @@ body{padding-bottom:max(24px,env(safe-area-inset-bottom))}
   <div class="head"><h1 class="t-h1" id="hDate" style="margin:0"></h1></div>
   <main class="focus" id="focus"></main>
   <aside class="sections" id="plates"></aside>
+  <section class="fin" id="fin"></section>
 </div>
 <div id="toast" class="toast" hidden></div>
 <script src="логика.js"></script>
@@ -170,13 +175,15 @@ function finCard() {
   const d = (iso) => `${+iso.slice(8)} ${MON[+iso.slice(5, 7) - 1]}`;
   const mx = Math.max(...F.months.map((m) => m.life), 1), cmax = Math.max(...F.cats.map((c) => c.sum), 1);
   const last = F.as_of.slice(0, 7);
-  const months = F.months.map((m) => `<div class="bar ${m.m === last ? "part" : ""}"><span>${MON[+m.m.slice(5) - 1]}${m.m === last ? " (до " + +F.as_of.slice(8) + ")" : ""}</span><i style="width:${m.life / mx * 100}%"></i><em>${rub(m.life)}</em></div>`).join("");
+  const months = F.months.map((m) => `<div class="fbar ${m.m === last ? "part" : ""}"><span>${MON[+m.m.slice(5) - 1].replace("мая", "май")}${m.m === last ? " (до " + +F.as_of.slice(8) + ")" : ""}</span><i style="width:${m.life / mx * 100}%"></i><em>${rub(m.life)}</em></div>`).join("");
   const top = F.cats.slice(0, 12), rest = F.cats.slice(12).reduce((a, c) => a + c.sum, 0);
-  const cats = top.concat(rest ? [{ name: "Остальное", sum: rest }] : []).map((c) => `<div class="bar cat"><span>${esc(c.name)}</span><i style="width:${c.sum / cmax * 100}%"></i><em>${rub(c.sum)} · ${Math.round(c.sum / F.life * 100)}%</em></div>`).join("");
+  const cats = top.concat(rest ? [{ name: "Остальное", sum: rest }] : []).map((c) => `<div class="fbar cat"><span>${esc(c.name)}</span><i style="width:${c.sum / cmax * 100}%"></i><em>${rub(c.sum)} · ${Math.round(c.sum / F.life * 100)}%</em></div>`).join("");
   return `<div class="card"><h2>Финансы с начала года <small class="t-text-s t-muted">${d(F.from)} – ${d(F.as_of)} ${F.as_of.slice(0, 4)}</small></h2>
-    <div class="kpi"><div><b>${rub(F.life)}</b><span>расходы на жизнь</span></div><div><b>${rub(F.avg_month)}</b><span>в среднем за месяц (${F.full_months} полных)</span></div>
-      <div><b>${rub(F.invest)}</b><span>отложено в инвестиции</span></div><div><b>${rub(F.mortgage_prepay)}</b><span>досрочно по ипотеке</span></div></div>
-    <div class="cols"><div><div class="day t-text-xs t-muted">По месяцам</div>${months}</div><div><div class="day t-text-xs t-muted">По категориям</div>${cats}</div></div>
+    <div class="kpis"><div class="kpi"><div class="kpi__lab">расходы на жизнь</div><div class="kpi__val">${rub(F.life)}</div></div>
+      <div class="kpi"><div class="kpi__lab">в среднем за месяц (${F.full_months} полных)</div><div class="kpi__val">${rub(F.avg_month)}</div></div>
+      <div class="kpi"><div class="kpi__lab">отложено в инвестиции</div><div class="kpi__val">${rub(F.invest)}</div></div>
+      <div class="kpi"><div class="kpi__lab">досрочно по ипотеке</div><div class="kpi__val">${rub(F.mortgage_prepay)}</div></div></div>
+    <div class="fcols" style="margin-top:16px"><div><div class="day t-text-xs t-muted">По месяцам</div>${months}</div><div><div class="day t-text-xs t-muted">По категориям</div>${cats}</div></div>
     <div class="t-text-s t-muted" style="margin-top:10px">Без переводов между счетами, инвестиций и ипотеки. Рента за период: ${rub(F.rent)}. Обновлено ${esc(d(F.updated_at.slice(0, 10)))}.</div></div>`;
 }
 function addForm() {
