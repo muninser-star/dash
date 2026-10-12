@@ -75,7 +75,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<
 const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
 let KEY = lsGet(KEY_LS), RULES = null;
-const S = { kids: null, health: null, film: null, fin: null, polza: null, mode: lsGet("dash_mode") || "family", form: false, undo: false, view: null, bet: null, rec: null, recBusy: false, recErr: null, form2: null };
+const S = { kids: null, health: null, film: null, fin: null, polza: null, proxy: null, usage: null, mode: lsGet("dash_mode") || "family", form: false, undo: false, view: null, bet: null, rec: null, recBusy: false, recErr: null, form2: null };
 window.addEventListener("hashchange", () => { S.view = location.hash === "#film" ? "film" : null; render(); });
 
 async function api(fn, action, payload) {
@@ -126,6 +126,8 @@ async function load() {
     render();
   }).catch(() => { S.health = { error: true }; render(); });
   api("dash", "polza").then((j) => { S.polza = j; renderPlates(); }).catch(() => { S.polza = { error: true }; renderPlates(); });
+  api("dash", "proxy").then((j) => { S.proxy = j; renderPlates(); }).catch((e) => { S.proxy = { error: e.message }; renderPlates(); });
+  api("dash", "usage").then((j) => { S.usage = j; renderPlates(); }).catch(() => { S.usage = { error: true }; renderPlates(); });
   api("dash", "finance").then((j) => { S.fin = j; render(); }).catch((e) => { S.fin = { error: e.message }; render(); });
   api("dash", "films_pick", { mode: S.mode }).then((j) => { S.film = j; S.bet = null; render(); }).catch(() => { S.film = { error: true }; render(); });
 }
@@ -284,12 +286,35 @@ function filmView() {
 // Подпись плашки с балансом: «233,28 ₽ · пополнить»; пока грузится — «…», не ответил — обычная подпись
 function plateCaption(p) {
   if (!p.url) return "Скоро";
+  if (p.balance === "proxy") return proxyCaption(p);
+  if (p.balance === "usage") return usageCaption(p);
   if (p.balance !== "polza") return esc(p.caption);
   const B = S.polza;
   if (!B) return "Баланс…";
   if (B.error || !isFinite(B.amount)) return esc(p.caption);
   const sum = B.amount.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return `<b${B.amount < 100 ? ' style="color:var(--error)"' : ""}>${sum} ₽</b> · пополнить`;
+}
+// Прокси: «MX · через 19 дн.» по ближайшему окончанию; меньше 3 дней — красным, истёк — «отключён»
+function proxyCaption(p) {
+  const P = S.proxy;
+  if (!P) return "Срок…";
+  if (P.error) return P.error === "no_proxy_key" ? "Нужен ключ API" : esc(p.caption);
+  const o = (P.orders || []).map((x) => ({ ...x, t: Date.parse(x.expires_at) })).filter((x) => isFinite(x.t)).sort((a, b) => a.t - b.t)[0];
+  if (!o) return "Заказов нет";
+  const left = o.t - Date.now(), days = Math.floor(left / 864e5), hours = Math.floor(left / 36e5);
+  const when = left <= 0 ? "отключён" : days >= 1 ? `через ${days} дн.` : `через ${Math.max(hours, 0)} ч`;
+  const date = new Date(o.t).toLocaleDateString("ru-RU", { day: "numeric", month: "short", timeZone: "Europe/Moscow" });
+  return `<b${left < 3 * 864e5 ? ' style="color:var(--error)"' : ""}>${esc(o.country)} · ${when}</b> · ${date}`;
+}
+// Supabase: «база 27% · файлы 1%»; от 80% — красным (пора чистить или переходить на платный тариф)
+function usageCaption(p) {
+  const U = S.usage;
+  if (!U) return "Считаю…";
+  if (U.error) return esc(p.caption);
+  const pc = (a, b) => Math.round((a / b) * 100);
+  const db = pc(U.db_bytes, U.db_limit), st = pc(U.storage_bytes, U.storage_limit), mb = Math.round(U.db_bytes / 1048576);
+  return `<b${Math.max(db, st) >= 80 ? ' style="color:var(--error)"' : ""}>база ${db}%</b> · ${mb} из 500 МБ · файлы ${st}%`;
 }
 function renderPlates() {
   $("plates").innerHTML = RULES.map((p) => `<a class="section-tile ${p.url ? "" : "t-muted"}" href="${esc(p.withCode ? medUrl() : p.url || "#")}"${p.balance ? ' target="_blank" rel="noopener"' : ""}><span class="section-tile__ic"><svg class="ic" aria-hidden="true"><use href="#i-${esc(p.ic || "star")}"/></svg></span><b>${esc(p.title)}</b><span class="t-text-s t-muted">${plateCaption(p)}</span></a>`).join("");

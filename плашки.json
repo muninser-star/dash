@@ -42,5 +42,21 @@
     "icon": "💳",
     "ic": "wallet",
     "balance": "polza"
+  },
+  {
+    "title": "Прокси",
+    "caption": "Срок · продлить",
+    "url": "https://proxys.world/my",
+    "icon": "🌐",
+    "ic": "shield",
+    "balance": "proxy"
+  },
+  {
+    "title": "Supabase",
+    "caption": "Бесплатный тариф",
+    "url": "https://supabase.com/dashboard/org/sjdtmttbzcojbhfpdfbl/usage",
+    "icon": "🗄️",
+    "ic": "dynamics",
+    "balance": "usage"
   }
 ]
