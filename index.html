@@ -214,6 +214,10 @@ const MOODS = [["лёгкое, чтобы не думать", "Лёгкое"], [
   ["советская классика", "Советское"], ["сериал", "Сериал"], ["короткое, до 90 минут", "Короткое"], ["удиви меня чем-то неожиданным", "Удиви"]];
 function modeBar() { return `<div class="seg" style="flex-wrap:wrap">${Object.keys(MODE_LABEL).map((m) => `<button type="button" class="${S.mode === m ? "is-active" : ""}" data-act="mode" data-m="${m}">${MODE_LABEL[m]}</button>`).join("")}</div>`; }
 function pickFilm(F) { if (!F || !F.new) return null; const list = F.new; if (S.bet != null && list[S.bet]) return { f: list[S.bet], reason: list[S.bet].why }; const p = F.pick && list.find((f) => f.title === F.pick.title && f.year === F.pick.year); return p ? { f: p, reason: F.pick.reason } : list[0] ? { f: list[0], reason: list[0].why } : null; }
+function filmMeta(f) {
+  const rt = f.rating ? "Кинопоиск " + String(f.rating).replace(".", ",") : f.my_rating != null ? "" : "рейтинг не проверен";
+  return [f.year, f.genre, f.minutes ? f.minutes + " мин" : f.runtime, f.age != null && f.age !== "" ? f.age + "+" : "", rt].filter(Boolean).map(esc).join(" · ");
+}
 function filmCard() {
   const FF = S.film;
   if (!FF) return { full: `<div class="card" id="film"><h2>Фильм на вечер</h2><span class="t-text-s t-muted">Подбираю по вашим оценкам… один раз в день, до минуты</span></div>`, fold: "" };
