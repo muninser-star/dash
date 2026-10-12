@@ -1,4 +1,32 @@
 [
-  { "title": "Дело о спирали", "caption": "Дарвиновский музей, квест для 6–8 лет", "url": "https://muninser-star.github.io/dima-darwin-museum/", "icon": "🦴" },
-  { "title": "Танковый штаб", "caption": "Комикс, раскраска и факты про танки", "url": "https://muninser-star.github.io/tanki-komiks-dima/", "icon": "🪖" }
+  {
+    "title": "Музей космонавтики — для класса",
+    "caption": "Книга-детектив «Дело о пропавшем «бип-бип»». Ссылка для чата класса: имя и возраст на входе",
+    "url": "kosmos/",
+    "icon": "🚀"
+  },
+  {
+    "title": "Музей космонавтики — Дима",
+    "caption": "Та же книга-приключение, сразу для Димы, 7 лет",
+    "url": "kosmos-dima/",
+    "icon": "🕵️"
+  },
+  {
+    "title": "Нижний Новгород",
+    "caption": "Экспедиция 17–21 августа: крепость, 560 ступеней, две реки",
+    "url": "nizhny/",
+    "icon": "🏰"
+  },
+  {
+    "title": "Дело о спирали",
+    "caption": "Дарвиновский музей, квест для 6–8 лет",
+    "url": "https://muninser-star.github.io/dima-darwin-museum/",
+    "icon": "🦴"
+  },
+  {
+    "title": "Танковый штаб",
+    "caption": "Комикс, раскраска и факты про танки",
+    "url": "https://muninser-star.github.io/tanki-komiks-dima/",
+    "icon": "🪖"
+  }
 ]

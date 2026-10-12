@@ -3,7 +3,7 @@
 <title>Приключения</title>
 <link rel="stylesheet" href="../токены.css">
 <style>main{max-width:var(--content);margin:0 auto;padding:var(--sp-4);display:grid;gap:var(--sp-3)}.sections{grid-template-columns:1fr}.section-tile{min-height:88px}</style></head>
-<body><header class="app-header"><a class="back" href="../">← Семья</a><span class="app-title">Приключения с Димой</span></header>
+<body><header class="app-header"><a class="back" href="../">← Семья</a><span class="app-title">Приключения</span></header>
 <main><div class="sections" id="list"></div></main>
 <script>fetch("../приключения.json").then(r=>r.json()).then(l=>{document.getElementById("list").innerHTML=l.map(x=>`<a class="section-tile" href="${x.url}"><b>${x.icon} ${x.title}</b><span class="t-text-s t-muted">${x.caption}</span></a>`).join("")})</script>
 </body></html>

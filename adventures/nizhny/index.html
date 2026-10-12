@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Экспедиция в Нижний Новгород · 17–21 августа</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Onest:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#E6E0CD; --paper:#F5EFDE; --ink:#1E242B; --soft:#5B6270;
+    --accent:#1F6E8C; --accent-deep:#12506B; --gold:#C0872B; --rule:#CBC0A4;
+    --shadow:rgba(30,36,43,.14);
+    --disp:'Unbounded', Georgia, serif;
+    --body:'Onest', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --scale:1.05;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;font-family:var(--body);color:var(--ink);background:var(--bg);line-height:1.6;-webkit-text-size-adjust:100%;}
+  .wrap{max-width:860px;margin:0 auto;padding:0 20px;}
+  h2{font-family:var(--disp);font-weight:600;font-size:calc(clamp(23px,4.6vw,34px)*var(--scale));margin:0 0 6px;line-height:1.12;}
+  .sub{color:var(--soft);margin:0 0 22px;font-size:calc(16px*var(--scale));}
+  section{padding:40px 0;}
+  .tag{display:inline-flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;font-size:12px;color:var(--accent-deep);margin-bottom:12px;}
+  .tag .num{font-family:var(--disp);font-weight:800;font-size:13px;background:var(--accent);color:#fff;width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;letter-spacing:0;}
+
+  /* ---------- HERO ---------- */
+  .hero{padding:52px 0 34px;text-align:center;}
+  .hero .eyebrow{font-weight:700;letter-spacing:.26em;text-transform:uppercase;font-size:12px;color:var(--soft);margin-bottom:14px;}
+  .hero h1{font-family:var(--disp);font-weight:800;font-size:calc(clamp(30px,7vw,54px)*var(--scale));line-height:1.03;margin:0 0 10px;}
+  .hero h1 .accent{color:var(--accent);}
+  .hero .lead{max-width:560px;margin:0 auto;font-size:calc(17px*var(--scale));color:var(--soft);}
+  .crew{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:18px 0 4px;}
+  .crew span{background:var(--paper);border:1px solid var(--rule);border-radius:22px;padding:7px 15px;font-size:14px;font-weight:700;box-shadow:0 3px 0 var(--rule);}
+
+  /* ---------- КАРУСЕЛЬ ---------- */
+  .carousel{position:relative;margin:0 0 12px;}
+  .track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;scrollbar-width:none;-webkit-overflow-scrolling:touch;border-radius:12px;}
+  .track::-webkit-scrollbar{display:none;}
+  .slide{flex:0 0 100%;scroll-snap-align:center;aspect-ratio:4/3;border-radius:12px;overflow:hidden;position:relative;background:var(--paper);border:1px solid var(--rule);}
+  .slide img{width:100%;height:100%;object-fit:cover;display:block;}
+  .slide .cap{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(30,36,43,.85));color:#F5EFDE;font-size:13px;padding:22px 12px 9px;}
+  .slide.noimg img{display:none;}
+  .slide .fallback{display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:var(--paper);color:var(--soft);text-align:center;padding:16px;}
+  .slide.noimg .fallback{display:flex;}
+  .slide .fallback .emoji{font-size:44px;}
+  .cbtn{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;border:none;background:rgba(30,36,43,.6);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;}
+  .cbtn:focus-visible{outline:3px solid var(--gold);}
+  .cbtn.prev{left:8px;} .cbtn.next{right:8px;}
+  .dots{display:flex;gap:6px;justify-content:center;margin-top:8px;}
+  .dots i{width:7px;height:7px;border-radius:50%;background:var(--rule);transition:.2s;cursor:pointer;}
+  .dots i.on{background:var(--accent);width:20px;border-radius:4px;}
+
+  /* ---------- ФАКТЫ ---------- */
+  .facts{display:flex;flex-direction:column;gap:12px;}
+  .fact{background:var(--paper);border:1px solid var(--rule);border-radius:12px;box-shadow:0 3px 0 var(--rule);overflow:hidden;}
+  .fact>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:14px;padding:15px 17px;font-weight:700;font-size:calc(15.5px*var(--scale));}
+  .fact>summary::-webkit-details-marker{display:none;}
+  .fact>summary:focus-visible{outline:3px solid var(--gold);outline-offset:-3px;border-radius:12px;}
+  .fact .fn{font-family:var(--disp);font-weight:800;color:#fff;background:var(--gold);min-width:34px;height:34px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;flex:0 0 auto;}
+  .fact .ft{flex:1 1 auto;} .fact .chev{color:var(--soft);font-size:12px;transition:transform .25s;}
+  .fact[open] .chev{transform:rotate(180deg);} .fact[open]>summary{border-bottom:1px solid var(--rule);}
+  .fbody{padding:15px 17px 17px;} .fbody p{margin:10px 0 0;font-size:calc(15px*var(--scale));}
+  .speak{background:none;border:1px solid var(--accent);color:var(--accent-deep);border-radius:20px;padding:5px 12px;font-size:13px;font-weight:700;cursor:pointer;margin-top:12px;display:inline-flex;gap:6px;align-items:center;}
+
+  /* ---------- КАРТОЧКИ / МАРШРУТ ---------- */
+  .card>img{width:100%;height:170px;object-fit:cover;border-radius:10px;margin-bottom:10px;display:block;}
+  .card{background:var(--paper);border:1px solid var(--rule);border-radius:14px;padding:18px 20px;box-shadow:0 4px 0 var(--rule);margin-bottom:14px;}
+  .route{list-style:none;margin:0;padding:0;position:relative;}
+  .route::before{content:"";position:absolute;left:15px;top:8px;bottom:8px;width:2px;background:repeating-linear-gradient(var(--rule) 0 6px,transparent 6px 12px);}
+  .stop{position:relative;padding:0 0 20px 46px;} .stop:last-child{padding-bottom:0;}
+  .stop .dot{position:absolute;left:6px;top:2px;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 4px var(--bg);}
+  .stop h3{margin:0 0 3px;font-size:calc(16.5px*var(--scale));font-family:var(--disp);font-weight:600;} .stop p{margin:0;font-size:calc(14.5px*var(--scale));color:var(--soft);}
+
+  .day{background:var(--paper);border:1px solid var(--rule);border-radius:14px;box-shadow:0 4px 0 var(--rule);overflow:hidden;margin-bottom:14px;}
+  .day>summary{list-style:none;cursor:pointer;padding:16px 18px;display:flex;align-items:center;gap:13px;font-weight:700;}
+  .day>summary::-webkit-details-marker{display:none;}
+  .day .dnum{font-family:var(--disp);font-weight:800;background:var(--accent);color:#fff;border-radius:10px;padding:6px 10px;font-size:12.5px;white-space:nowrap;}
+  .day .dttl{flex:1 1 auto;font-size:calc(15.5px*var(--scale));}
+  .day .chev{color:var(--soft);font-size:12px;transition:transform .25s;}
+  .day[open] .chev{transform:rotate(180deg);}
+  .day[open]>summary{border-bottom:1px solid var(--rule);}
+  .dbody{padding:16px 18px 18px;}
+  .tl{list-style:none;margin:0;padding:0;}
+  .tl li{display:flex;gap:12px;padding:8px 0;border-bottom:1px dashed var(--rule);font-size:calc(14.5px*var(--scale));}
+  .tl li:last-child{border-bottom:none;}
+  .tl b{flex:0 0 58px;color:var(--accent-deep);font-variant-numeric:tabular-nums;}
+  .hint{margin-top:12px;padding:11px 13px;border-radius:10px;background:rgba(31,110,140,.10);border-left:3px solid var(--accent);font-size:calc(14px*var(--scale));}
+  .warn{margin-top:12px;padding:11px 13px;border-radius:10px;background:rgba(192,135,43,.14);border-left:3px solid var(--gold);font-size:calc(14px*var(--scale));}
+
+  table.price{width:100%;border-collapse:collapse;margin:12px 0 4px;font-size:calc(14.5px*var(--scale));}
+  table.price th,table.price td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--rule);}
+  table.price th{color:var(--accent-deep);font-size:13px;text-transform:uppercase;letter-spacing:.06em;}
+  table.price td:last-child,table.price th:last-child{text-align:right;font-variant-numeric:tabular-nums;}
+
+  /* ---------- ИГРЫ ---------- */
+  .game{background:var(--paper);border:1px solid var(--rule);border-radius:14px;padding:20px;box-shadow:0 4px 0 var(--rule);margin-bottom:14px;text-align:center;}
+  .game .prompt{font-weight:700;font-size:calc(16px*var(--scale));margin-bottom:14px;}
+  .opts,.mopts{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
+  .opt,.mopt{font-size:calc(30px*var(--scale));background:var(--bg);border:2px solid var(--rule);border-radius:14px;width:74px;height:74px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.12s;}
+  .opt:hover,.mopt:hover{transform:translateY(-2px);}
+  .opt.right,.mopt.right{border-color:var(--accent);background:rgba(31,110,140,.15);}
+  .opt.wrong,.mopt.wrong{border-color:#c0483a;opacity:.5;}
+  .reveal{background:var(--accent);color:#fff;border:none;font-weight:700;font-size:14px;padding:10px 20px;border-radius:24px;cursor:pointer;}
+  .answer{margin-top:12px;padding:12px 14px;border-radius:10px;background:rgba(31,110,140,.10);border-left:3px solid var(--accent);font-size:calc(14.5px*var(--scale));display:none;text-align:left;}
+  .answer.show{display:block;}
+  .qbtns{display:flex;flex-direction:column;gap:9px;max-width:340px;margin:0 auto;}
+  .qbtn{font-family:var(--body);font-size:calc(15.5px*var(--scale));font-weight:700;background:var(--bg);border:2px solid var(--rule);border-radius:12px;padding:13px 14px;cursor:pointer;transition:.12s;color:var(--ink);}
+  .qbtn:hover{transform:translateY(-1px);border-color:var(--accent);}
+  .qbtn.right{border-color:var(--accent);background:rgba(31,110,140,.16);}
+  .qbtn.wrong{border-color:#c0483a;opacity:.5;}
+  .qprog{font-size:13px;color:var(--soft);margin-bottom:10px;letter-spacing:.08em;}
+
+  /* ---------- БЕЙДЖИ ---------- */
+  .badges{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:18px;}
+  .badge{width:60px;height:60px;border-radius:50%;border:2px dashed var(--rule);display:flex;align-items:center;justify-content:center;font-size:26px;opacity:.35;filter:grayscale(1);transition:.3s;}
+  .badge.got{opacity:1;filter:none;border-style:solid;border-color:var(--gold);background:rgba(192,135,43,.14);transform:scale(1.05);}
+
+  /* ---------- РОДИТЕЛЮ ---------- */
+  .parent{background:var(--ink);color:var(--paper);border-radius:14px;padding:18px 20px;}
+  .parent summary{cursor:pointer;font-weight:700;list-style:none;} .parent summary::-webkit-details-marker{display:none;}
+  .parent[open] summary{margin-bottom:10px;} .parent p,.parent li{font-size:14px;color:#e2ddcd;}
+  .parent b{color:#fff;}
+
+  footer{text-align:center;padding:30px 0 44px;color:var(--soft);font-size:13px;}
+  footer .stamp{font-family:var(--disp);font-weight:800;color:var(--accent);font-size:15px;margin-bottom:6px;}
+
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto;} .track{scroll-behavior:auto;}}
+  @media print{
+    .cbtn,.dots,.speak,.reveal,.parent{display:none!important;}
+    .track{overflow:visible;} .slide{flex-basis:auto;page-break-inside:avoid;}
+    body{background:#fff;}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero wrap">
+  <div class="eyebrow">Экспедиция · 17–21 августа 2026</div>
+  <h1>Нижний Новгород:<br><span class="accent">крепость на слиянии двух рек</span></h1>
+  <p class="lead">Капитан Дима и юнга Даня, у нас пять дней. Крепость, которую никто не взял. Лестница из 560 ступеней. Две реки разного цвета. И целый день в аквапарке.</p>
+  <div class="crew"><span>🧭 Капитан Дима, 7</span><span>⚓ Юнга Даня, 4</span><span>👨‍👩‍👦‍👦 Папа и мама</span></div>
+  <div class="badges" id="badges">
+    <div class="badge" data-badge="facts" title="Открыть все факты">📖</div>
+    <div class="badge" data-badge="game" title="Игра для юнги">🎮</div>
+    <div class="badge" data-badge="quiz" title="Квиз капитана">🧠</div>
+    <div class="badge" data-badge="quest" title="Квест на месте">🔍</div>
+    <div class="badge" data-badge="finish" title="Диплом">🏅</div>
+  </div>
+</header>
+
+<!-- ============ 01 ФАКТЫ ============ -->
+<section class="wrap">
+  <div class="tag"><span class="num">01</span> Что нужно знать про этот город</div>
+  <h2>11 фактов, от которых открывается рот</h2>
+  <p class="sub">Нажимай на факт — он откроется, а внутри фотографии, которые листаются вбок 👉</p>
+
+  <div class="facts" data-badge-src="facts">
+
+    <details class="fact">
+      <summary><span class="fn">1</span><span class="ft">Городу 805 лет</span><span class="chev">▼</span></summary>
+      <div class="fbody">
+        <div class="carousel"><div class="track">
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/20220622_Nizhny_Novgorod_Kremlin_05.jpg?width=900" alt="Стены Нижегородского кремля" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Нижегородский кремль сегодня</div><div class="fallback"><span class="emoji">🏰</span><span>Нижегородский кремль</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nizhny_Novgorod._Kremlin_and_Strelka_(2).jpg?width=900" alt="Кремль и Стрелка" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Кремль стоит на высоком берегу</div><div class="fallback"><span class="emoji">🏞️</span><span>Кремль над рекой</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Dmitrievskaya_Tower_of_Nizhny_Novgorod_Kremlin_1896.jpg?width=900" alt="Дмитриевская башня в 1896 году" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">А так башня выглядела в 1896 году</div><div class="fallback"><span class="emoji">📜</span><span>Старинное фото башни</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/20220622_Nizhny_Novgorod_Kremlin_18.jpg?width=900" alt="Башня кремля" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Каждая башня — со своим именем</div><div class="fallback"><span class="emoji">🗼</span><span>Башня кремля</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/20220622_Nizhny_Novgorod_Kremlin_22.jpg?width=900" alt="Вид с кремлёвской стены" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Вид со стены</div><div class="fallback"><span class="emoji">👀</span><span>Вид со стены</span></div></div>
+        </div><button class="cbtn prev" aria-label="Назад">‹</button><button class="cbtn next" aria-label="Вперёд">›</button><div class="dots"></div></div>
+        <p>Нижний Новгород основали в 1221 году — всего на 74 года позже Москвы. Значит, в 2026 году городу исполнилось 805 лет. Место выбрали не случайно: с высокого берега видно обе реки далеко-далеко, и врага замечали задолго до того, как он подходил.</p>
+        <button class="speak">🔊 Прочитать вслух</button>
+      </div>
+    </details>
+
+    <details class="fact">
+      <summary><span class="fn">2</span><span class="ft">Крепость, которую никто не взял</span><span class="chev">▼</span></summary>
+      <div class="fbody">
+        <div class="carousel"><div class="track">
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Dmitrievskaya_Tower_of_the_Nizhny_Novgorod_Kremlin_01.jpg?width=900" alt="Дмитриевская башня" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Дмитриевская башня — главные ворота</div><div class="fallback"><span class="emoji">🚪</span><span>Главные ворота кремля</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Dmitrievskaya_Tower_and_the_Arsenal.jpg?width=900" alt="Башня и Арсенал" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Башня и старый Арсенал внутри кремля</div><div class="fallback"><span class="emoji">🛡️</span><span>Арсенал</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/20220622_Nizhny_Novgorod_Kremlin_12.jpg?width=900" alt="Кремлёвская стена" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Стена спускается прямо по склону</div><div class="fallback"><span class="emoji">🧱</span><span>Стена по склону</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/20220622_Nizhny_Novgorod_Kremlin_18.jpg?width=900" alt="Башня крупным планом" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Толщина стены внизу — до 5 метров</div><div class="fallback"><span class="emoji">🗿</span><span>Толстая стена</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/20220622_Nizhny_Novgorod_Kremlin_05.jpg?width=900" alt="Стены кремля" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Кремль обходят по кругу — почти 2 км</div><div class="fallback"><span class="emoji">🔄</span><span>Круг по стенам</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/20220622_Nizhny_Novgorod_Kremlin_22.jpg?width=900" alt="Кремль сверху" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Отсюда мы будем смотреть на реки</div><div class="fallback"><span class="emoji">🔭</span><span>Смотровая площадка</span></div></div>
+        </div><button class="cbtn prev" aria-label="Назад">‹</button><button class="cbtn next" aria-label="Вперёд">›</button><div class="dots"></div></div>
+        <p>У Нижегородского кремля 13 башен, а стена вокруг — почти 2 километра. Внизу она толщиной до 5 метров: это как пять взрослых, лежащих в ряд. И самое главное — за всю историю ни один враг не смог прорваться внутрь. Мы пройдём по стене сами, наверху есть настоящая дорожка.</p>
+        <button class="speak">🔊 Прочитать вслух</button>
+      </div>
+    </details>
+
+    <details class="fact">
+      <summary><span class="fn">3</span><span class="ft">Отсюда пошли спасать Москву</span><span class="chev">▼</span></summary>
+      <div class="fbody">
+        <div class="carousel"><div class="track">
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Monument_to_Minin_and_Pozharsky_in_Nizhny_Novgorod_-_pedestal.jpg?width=900" alt="Памятник Минину и Пожарскому в Нижнем Новгороде" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Памятник Минину и Пожарскому у кремля</div><div class="fallback"><span class="emoji">🗿</span><span>Минин и Пожарский</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/NN_Minin_and_Pozharsky_Square_08-2016_img1.jpg?width=900" alt="Площадь Минина и Пожарского" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Площадь Минина и Пожарского — сюда мы придём первым делом</div><div class="fallback"><span class="emoji">🏛️</span><span>Площадь Минина</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Dmitrievskaya_Tower_of_the_Nizhny_Novgorod_Kremlin_01.jpg?width=900" alt="Дмитриевская башня с площади" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">С этой площади входят в кремль</div><div class="fallback"><span class="emoji">🚪</span><span>Вход в кремль</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/20220622_Nizhny_Novgorod_Kremlin_12.jpg?width=900" alt="Стены кремля" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">У этих стен собиралось ополчение</div><div class="fallback"><span class="emoji">⚔️</span><span>Стены кремля</span></div></div>
+        </div><button class="cbtn prev" aria-label="Назад">‹</button><button class="cbtn next" aria-label="Вперёд">›</button><div class="dots"></div></div>
+        <p>В 1612 году Москву захватили враги, и казалось, что помощи ждать неоткуда. Тогда нижегородский торговец Кузьма Минин вышел к людям и попросил отдать деньги на войско, а командовать позвали князя Дмитрия Пожарского. Они собрали ополчение здесь и пошли освобождать Москву — и освободили. Тот самый памятник двум героям на Красной площади поставили им. А у Нижегородского кремля стоит его копия, чуть поменьше.</p>
+        <button class="speak">🔊 Прочитать вслух</button>
+      </div>
+    </details>
+
+    <details class="fact">
+      <summary><span class="fn">4</span><span class="ft">Лестница из 560 ступеней</span><span class="chev">▼</span></summary>
+      <div class="fbody">
+        <div class="carousel"><div class="track">
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Chkalov_Stairs_From_Above_2018.jpg?width=900" alt="Чкаловская лестница сверху" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Сверху лестница похожа на цифру 8</div><div class="fallback"><span class="emoji">🔢</span><span>Лестница-восьмёрка</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Chkalov_Stairs_Front_View_2018.jpg?width=900" alt="Чкаловская лестница" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Вид снизу — придётся задрать голову</div><div class="fallback"><span class="emoji">🪜</span><span>Лестница снизу</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Chkalov_Stairs_(view_from_Volga).jpg?width=900" alt="Лестница с Волги" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">А так её видно с реки</div><div class="fallback"><span class="emoji">🚢</span><span>Вид с реки</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Chkalov_Stairs_in_1954.jpg?width=900" alt="Чкаловская лестница в 1954 году" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">1954 год — лестница совсем новая</div><div class="fallback"><span class="emoji">📷</span><span>Фото 1954 года</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Chkalov_stairs_and_Nizhnevolzhskaya_embankment.jpg?width=900" alt="Лестница и набережная" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Внизу — Нижневолжская набережная</div><div class="fallback"><span class="emoji">🌊</span><span>Набережная внизу</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Chkalov_Staircase_and_St._George's_Tower.jpg?width=900" alt="Лестница и Георгиевская башня" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Рядом — Георгиевская башня кремля</div><div class="fallback"><span class="emoji">🗼</span><span>Георгиевская башня</span></div></div>
+        </div><button class="cbtn prev" aria-label="Назад">‹</button><button class="cbtn next" aria-label="Вперёд">›</button><div class="dots"></div></div>
+        <p>Чкаловская лестница спускается от кремля прямо к Волге, и в ней 560 ступеней. Если посмотреть сверху, видно, что она сделана в форме цифры 8 — два кольца одно под другим. Построили её в 1949 году. Мы пойдём сверху вниз: так гораздо легче, а внизу нас будет ждать теплоход.</p>
+        <button class="speak">🔊 Прочитать вслух</button>
+      </div>
+    </details>
+
+    <details class="fact">
+      <summary><span class="fn">5</span><span class="ft">Лётчик, который перелетел через Северный полюс</span><span class="chev">▼</span></summary>
+      <div class="fbody">
+        <div class="carousel"><div class="track">
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Monument_to_Valery_Chkalov_Nizhny_Novgorod.jpg?width=900" alt="Памятник Валерию Чкалову" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Памятник Чкалову стоит на самом краю откоса</div><div class="fallback"><span class="emoji">✈️</span><span>Памятник Чкалову</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Chkalov_Stairs_From_Above_2018.jpg?width=900" alt="Вид от памятника вниз" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">От памятника лестница уходит вниз к реке</div><div class="fallback"><span class="emoji">🪜</span><span>Лестница от памятника</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Chkalov_Staircase_and_St._George's_Tower.jpg?width=900" alt="Откос и башня" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Отсюда — один из лучших видов на Волгу</div><div class="fallback"><span class="emoji">🌅</span><span>Вид на Волгу</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Chkalov_Stairs_(view_from_Volga).jpg?width=900" alt="Лестница с воды" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Памятник виден даже с воды — он на самой верхушке</div><div class="fallback"><span class="emoji">🔭</span><span>Вид с воды</span></div></div>
+        </div><button class="cbtn prev" aria-label="Назад">‹</button><button class="cbtn next" aria-label="Вперёд">›</button><div class="dots"></div></div>
+        <p>Лестницу назвали в честь Валерия Чкалова — лётчика, который родился в Нижегородской области. В 1937 году он вместе с двумя товарищами полетел из Москвы через Северный полюс в Америку и не садился 63 часа подряд. Это почти три дня в воздухе, без сна и без остановок. Наверху лестницы стоит его памятник: Чкалов в лётной куртке смотрит на Волгу.</p>
+        <button class="speak">🔊 Прочитать вслух</button>
+      </div>
+    </details>
+
+    <details class="fact">
+      <summary><span class="fn">6</span><span class="ft">Две реки разного цвета</span><span class="chev">▼</span></summary>
+      <div class="fbody">
+        <div class="carousel"><div class="track">
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nizhny_Novgorod_ISS_view.jpg?width=900" alt="Нижний Новгород с Международной космической станции" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Город с Международной космической станции — реки видно как на карте</div><div class="fallback"><span class="emoji">🛰️</span><span>Вид из космоса</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Gorky_City._View_to_confluence_of_Volga_and_Oka_Rivers.jpg?width=900" alt="Слияние Волги и Оки" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Место, где Ока впадает в Волгу</div><div class="fallback"><span class="emoji">🌊</span><span>Слияние рек</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/2022-11-05_-_View_to_Oka_and_Volga_from_Kremlin.jpg?width=900" alt="Вид на Оку и Волгу из кремля" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Вид на две реки прямо со стены кремля</div><div class="fallback"><span class="emoji">👀</span><span>Вид со стены</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nizhny_Novgorod._Sunset_view_to_confluense_of_The_Oka_and_The_Volga_rivers_from_Nizhnevolzhskaya_embankment.jpg?width=900" alt="Закат над слиянием рек" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Закат над Стрелкой</div><div class="fallback"><span class="emoji">🌇</span><span>Закат над Стрелкой</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Night_view_to_confluence_of_The_Oka_and_The_Volga_rivers.jpg?width=900" alt="Ночной вид на слияние рек" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">А вечером включают подсветку</div><div class="fallback"><span class="emoji">🌃</span><span>Ночной вид</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nizhny_Novgorod_View_from_Kanavinsky_bridge.JPG?width=900" alt="Вид с Канавинского моста" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Вид с Канавинского моста</div><div class="fallback"><span class="emoji">🌉</span><span>Вид с моста</span></div></div>
+        </div><button class="cbtn prev" aria-label="Назад">‹</button><button class="cbtn next" aria-label="Вперёд">›</button><div class="dots"></div></div>
+        <p>Есть в городе место, которое называется Стрелка — там река Ока впадает в Волгу. Вода в реках разного оттенка, и в солнечный день видно полосу: вот тут ещё Ока, а вот уже Волга. Волга — самая длинная река во всей Европе, 3530 километров. А город так удобно лежит между двумя реками, что его фотографируют космонавты с орбиты.</p>
+        <button class="speak">🔊 Прочитать вслух</button>
+      </div>
+    </details>
+
+    <details class="fact">
+      <summary><span class="fn">7</span><span class="ft">Кружевные дома из железа</span><span class="chev">▼</span></summary>
+      <div class="fbody">
+        <div class="carousel"><div class="track">
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nizhny_Novgorod%2C_Strelka._Frames_of_the_former_warehouses_05-2023.jpg?width=900" alt="Пакгаузы на Стрелке" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Пакгаузы — железные каркасы 1896 года</div><div class="fallback"><span class="emoji">🕸️</span><span>Железные кружева</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nizhny_Novgorod._Pavilions_with_heritage_frames_at_The_Strelka_Side_08-2022.jpg?width=900" alt="Павильоны на Стрелке" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Внутри старого каркаса построили стеклянный зал</div><div class="fallback"><span class="emoji">🏗️</span><span>Стеклянный зал внутри</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nizhny_Novgorod_Fair_1903.jpg?width=900" alt="Нижегородская ярмарка в 1903 году" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Так выглядела ярмарка в 1903 году</div><div class="fallback"><span class="emoji">📜</span><span>Ярмарка 1903 года</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nizhny_Novgorod_Fair_badge_1890_by_shakko.jpg?width=900" alt="Значок Нижегородской ярмарки 1890 года" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Настоящий значок ярмарки, 1890 год</div><div class="fallback"><span class="emoji">🎖️</span><span>Значок ярмарки</span></div></div>
+        </div><button class="cbtn prev" aria-label="Назад">‹</button><button class="cbtn next" aria-label="Вперёд">›</button><div class="dots"></div></div>
+        <p>На Стрелке стоят два странных дома: снаружи — железные кружева, а внутри — стекло. Эти каркасы остались от огромной выставки, которую устроили в Нижнем в 1896 году. Именно на ней впервые показали людям радио Александра Попова и первый русский автомобиль. Каркасы простояли больше ста лет, их нашли, отчистили и построили внутри концертный зал.</p>
+        <button class="speak">🔊 Прочитать вслух</button>
+      </div>
+    </details>
+
+    <details class="fact">
+      <summary><span class="fn">8</span><span class="ft">Город-«карман России»</span><span class="chev">▼</span></summary>
+      <div class="fbody">
+        <div class="carousel"><div class="track">
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nizhny_Novgorod_Fair_1903.jpg?width=900" alt="Ярмарка 1903" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Ярмарка, 1903 год: сюда съезжались купцы со всего мира</div><div class="fallback"><span class="emoji">🏪</span><span>Старая ярмарка</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/New_pavillions_of_the_Nizhny_Novgorod_Fair%2C_06-2023.jpg?width=900" alt="Новые павильоны ярмарки" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Ярмарка работает и сегодня</div><div class="fallback"><span class="emoji">🏛️</span><span>Ярмарка сегодня</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nizhny_Novgorod_10-07-2024_the_Fair_08.jpg?width=900" alt="Главный дом ярмарки" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Главный ярмарочный дом</div><div class="fallback"><span class="emoji">🏰</span><span>Главный дом</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nizhny_Novgorod_Fair_badge_1890_by_shakko.jpg?width=900" alt="Значок ярмарки" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Значок ярмарки 1890 года</div><div class="fallback"><span class="emoji">🎖️</span><span>Значок</span></div></div>
+        </div><button class="cbtn prev" aria-label="Назад">‹</button><button class="cbtn next" aria-label="Вперёд">›</button><div class="dots"></div></div>
+        <p>Много лет назад в Нижний каждое лето съезжались торговцы со всей страны и из-за границы: везли ткани, чай, железо, меха. Про город даже придумали поговорку: «Петербург — голова России, Москва — её сердце, а Нижний Новгород — карман». Карман, потому что там лежат деньги.</p>
+        <button class="speak">🔊 Прочитать вслух</button>
+      </div>
+    </details>
+
+    <details class="fact">
+      <summary><span class="fn">9</span><span class="ft">Кулибин и часы размером с яйцо</span><span class="chev">▼</span></summary>
+      <div class="fbody">
+        <div class="carousel"><div class="track">
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Ivan_Kulibin_by_Vedenetsky_2020-12-01.jpg?width=900" alt="Портрет Ивана Кулибина" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Иван Кулибин — изобретатель из Нижнего Новгорода</div><div class="fallback"><span class="emoji">⚙️</span><span>Портрет Кулибина</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Kulibin_I_P.jpg?width=900" alt="Иван Кулибин" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Он всё делал своими руками, без всякого института</div><div class="fallback"><span class="emoji">🔧</span><span>Кулибин</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/NN_Rozhdestvenskaya_Street_08-2016_img1.jpg?width=900" alt="Рождественская улица" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Рождественская улица — по таким улицам он ходил</div><div class="fallback"><span class="emoji">🏘️</span><span>Старая улица</span></div></div>
+        </div><button class="cbtn prev" aria-label="Назад">‹</button><button class="cbtn next" aria-label="Вперёд">›</button><div class="dots"></div></div>
+        <p>В Нижнем Новгороде жил Иван Кулибин — человек, который сам, без всякой школы для инженеров, придумывал невероятные вещи. Он сделал часы величиной с гусиное яйцо, а внутри спрятал крошечный театр: каждый час дверцы открывались и фигурки разыгрывали сценку. Ещё он придумал, как перекинуть через реку мост одной огромной аркой, без опор в воде. С тех пор любого мастера-самоучку называют «кулибиным».</p>
+        <button class="speak">🔊 Прочитать вслух</button>
+      </div>
+    </details>
+
+    <details class="fact">
+      <summary><span class="fn">10</span><span class="ft">Раньше город назывался по-другому</span><span class="chev">▼</span></summary>
+      <div class="fbody">
+        <div class="carousel"><div class="track">
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Maxim_Gorky_LOC_Restored_edit1.jpg?width=900" alt="Писатель Максим Горький" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Максим Горький — писатель, родившийся в этом городе</div><div class="fallback"><span class="emoji">✍️</span><span>Максим Горький</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/GAZ-21_%22Volga%22_(3rd_series).jpg?width=900" alt="Автомобиль ГАЗ-21 Волга" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">«Волга» — машина, которую делали здесь</div><div class="fallback"><span class="emoji">🚗</span><span>Автомобиль «Волга»</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Moscow%2C_Volga_GAZ-21_grey%2C_Aug_2025_04.jpg?width=900" alt="ГАЗ-21 Волга" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">У неё на капоте — олень, герб города</div><div class="fallback"><span class="emoji">🦌</span><span>Олень на капоте</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nizhnevolzhskaya_Embankment._Nizhny_Novgorod%2C_2024-06.jpg?width=900" alt="Нижневолжская набережная" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Нижневолжская набережная сегодня</div><div class="fallback"><span class="emoji">🚶</span><span>Набережная</span></div></div>
+        </div><button class="cbtn prev" aria-label="Назад">‹</button><button class="cbtn next" aria-label="Вперёд">›</button><div class="dots"></div></div>
+        <p>С 1932 по 1990 год город назывался не Нижний Новгород, а Горький — в честь писателя Максима Горького, который здесь родился. Тогда же тут построили огромный автозавод, и с него выезжали машины «Волга» и «Чайка». На капоте «Волги» — серебряный олень: это герб Нижнего Новгорода.</p>
+        <button class="speak">🔊 Прочитать вслух</button>
+      </div>
+    </details>
+
+    <details class="fact">
+      <summary><span class="fn">11</span><span class="ft">Канатка над рекой — но в этот раз без нас</span><span class="chev">▼</span></summary>
+      <div class="fbody">
+        <div class="carousel"><div class="track">
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nizhny_Novgorod_Cableway_(June_2024)_-_2.jpg?width=900" alt="Нижегородская канатная дорога" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Кабинки идут прямо над Волгой</div><div class="fallback"><span class="emoji">🚡</span><span>Канатная дорога</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/2022-11-05_-_Nizhny_Novgorod_Cableway_-_View_to_Volga.jpg?width=900" alt="Вид из кабинки канатной дороги" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Вот такой вид из окошка кабинки</div><div class="fallback"><span class="emoji">🪟</span><span>Вид из кабинки</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/NN-Bor_Volga_Cableway_08-2016_img03.jpg?width=900" alt="Опоры канатной дороги" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Опоры стоят прямо в воде</div><div class="fallback"><span class="emoji">🗼</span><span>Опоры в воде</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nizhny_Novgorod_Cableway_(June_2024)_-_13.jpg?width=900" alt="Канатная дорога над Волгой" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">3661 метр над водой — рекорд Европы</div><div class="fallback"><span class="emoji">📏</span><span>Самая длинная в Европе</span></div></div>
+        </div><button class="cbtn prev" aria-label="Назад">‹</button><button class="cbtn next" aria-label="Вперёд">›</button><div class="dots"></div></div>
+        <p>Через Волгу в Нижнем натянута канатная дорога — самая длинная над водой во всей Европе: 3661 метр, а кабинка едет 12 минут. Плохая новость: летом 2026 года она закрыта на ремонт, и её обещают починить не раньше следующего года. Хорошая новость: вместо неё мы поплывём по Волге на настоящем теплоходе. Смотреть будем не сверху, а прямо с воды.</p>
+        <button class="speak">🔊 Прочитать вслух</button>
+      </div>
+    </details>
+
+  </div>
+</section>
+
+<!-- ============ 02 ИГРЫ ============ -->
+<section class="wrap">
+  <div class="tag"><span class="num">02</span> Игры</div>
+  <h2>Проверь себя перед экспедицией</h2>
+  <p class="sub">Первая — для юнги Дани. Вторая — для капитана Димы. Третья — для двоих.</p>
+
+  <div class="game" data-badge-src="game">
+    <div class="prompt">⚓ Для Дани: что течёт внизу под большой лестницей?</div>
+    <div class="opts">
+      <div class="opt" data-correct="1">🌊</div>
+      <div class="opt">🌵</div>
+      <div class="opt">🚀</div>
+      <div class="opt">🍰</div>
+    </div>
+    <div class="answer">Да! Внизу — река Волга. По ней плавают большие корабли, и мы на один такой сядем. 🎉</div>
+  </div>
+
+  <div class="game" id="quiz">
+    <div class="prompt">🧭 Для Димы: квиз про Нижний Новгород</div>
+    <div class="qprog" id="qprog">Вопрос 1 из 5</div>
+    <div class="qtext" style="font-weight:700;margin-bottom:12px;" id="qtext"></div>
+    <div class="qbtns" id="qbtns"></div>
+    <div class="answer" id="qdone"></div>
+  </div>
+
+  <div class="game" id="memgame">
+    <div class="prompt">🃏 Найди пары: переворачивай карточки по две</div>
+    <div class="mopts" id="mem"></div>
+    <div class="answer" id="memdone">Все пары собраны! 🎉</div>
+  </div>
+</section>
+
+<!-- ============ 03 МАРШРУТ ============ -->
+<section class="wrap">
+  <div class="tag"><span class="num">03</span> Маршрут</div>
+  <h2>Пять дней по порядку</h2>
+  <p class="sub">Нажимай на день — раскроется расписание. Время примерное: если устали, любой пункт можно выкинуть.</p>
+
+  <details class="day" open>
+    <summary><span class="dnum">17 авг · ПН</span><span class="dttl">Прилетаем — и сразу спать</span><span class="chev">▼</span></summary>
+    <div class="dbody">
+      <ul class="tl">
+        <li><b>18:25</b><span>Самолёт взлетает из Шереметьева, терминал B</span></li>
+        <li><b>19:45</b><span>Садимся в аэропорту «Стригино»</span></li>
+        <li><b>20:00</b><span>Выходим сразу: чемоданов в багаже нет, ждать ленту не надо</span></li>
+        <li><b>20:45</b><span>Приезжаем в квартиру, разбираем рюкзаки</span></li>
+        <li><b>21:00</b><span>Ужин и спать. Завтра длинный день</span></li>
+      </ul>
+      <div class="hint"><b>Дане:</b> в такси едем в детском кресле — так положено, пока тебе нет семи. Диме уже можно просто пристегнуться на заднем сиденье.</div>
+    </div>
+  </details>
+
+  <details class="day">
+    <summary><span class="dnum">18 авг · ВТ</span><span class="dttl">Крепость, 560 ступеней и теплоход</span><span class="chev">▼</span></summary>
+    <div class="dbody">
+      <ul class="tl">
+        <li><b>10:30</b><span>Площадь Минина и Пожарского. Входим в кремль через Дмитриевскую башню</span></li>
+        <li><b>10:45</b><span>Детская площадка «Детинец» — деревянная крепость, по которой можно лазить</span></li>
+        <li><b>11:30</b><span>Военная техника под открытым небом: пушки, самолёт, катер</span></li>
+        <li><b>12:00</b><span>Идём по стене кремля. Круг — почти 2 км, можно пройти половину</span></li>
+        <li><b>13:00</b><span>Обед</span></li>
+        <li><b>14:30</b><span>Большая Покровская: ищем бронзовые фигуры (см. квест ниже)</span></li>
+        <li><b>16:00</b><span>Отдых дома — обязательно, иначе вечер не получится</span></li>
+        <li><b>18:00</b><span>Чкаловская лестница. Спускаемся вниз и считаем ступени вслух</span></li>
+        <li><b>18:30</b><span>Теплоход по Волге, примерно час</span></li>
+        <li><b>20:00</b><span>Ужин на Рождественской улице</span></li>
+      </ul>
+      <div class="hint">По лестнице идём только вниз. Наверх подниматься не будем — внизу нас ждёт причал.</div>
+    </div>
+  </details>
+
+  <details class="day">
+    <summary><span class="dnum">19 авг · СР</span><span class="dttl">🌊 АКВАПАРК — главный день</span><span class="chev">▼</span></summary>
+    <div class="dbody">
+      <ul class="tl">
+        <li><b>09:15</b><span>Выезжаем на проспект Гагарина</span></li>
+        <li><b>10:00</b><span>Аквапарк «Океанис» открывается — заходим первыми, пока горки свободные</span></li>
+        <li><b>14:00</b><span>Выходим. Четыре часа в воде — это очень много</span></li>
+        <li><b>14:30</b><span>Обед</span></li>
+        <li><b>15:30</b><span>Парк «Швейцария» — он прямо через дорогу. 14 детских площадок и сухой фонтан</span></li>
+        <li><b>18:00</b><span>Домой, ранний ужин, ранний отбой</span></li>
+      </ul>
+      <div class="warn"><b>Важно:</b> из аквапарка нельзя выйти и вернуться обратно. Всё нужное берём с собой сразу.</div>
+    </div>
+  </details>
+
+  <details class="day">
+    <summary><span class="dnum">20 авг · ЧТ</span><span class="dttl">Звери и место, где встречаются реки</span><span class="chev">▼</span></summary>
+    <div class="dbody">
+      <ul class="tl">
+        <li><b>09:30</b><span>Едем в зоопарк «Лимпопо» — это на другом конце города, около 30 минут</span></li>
+        <li><b>10:00</b><span>Зоопарк: 230 видов зверей, больше 1300 животных</span></li>
+        <li><b>13:00</b><span>Обед</span></li>
+        <li><b>15:00</b><span>Стрелка. Собор Александра Невского — 87 метров, один из самых высоких храмов России</span></li>
+        <li><b>16:00</b><span>Пакгаузы — те самые железные кружева 1896 года</span></li>
+        <li><b>17:00</b><span>Стоим и смотрим, где Ока впадает в Волгу. Ищем полосу между двумя водами</span></li>
+        <li><b>18:30</b><span>Ужин и собираем чемоданы</span></li>
+      </ul>
+      <div class="hint"><b>Если пойдёт дождь:</b> вместо зоопарка — музей «Кварки» на улице Героя Фильченкова, 10. Там 140 экспонатов, и все можно трогать руками.</div>
+    </div>
+  </details>
+
+  <details class="day">
+    <summary><span class="dnum">21 авг · ПТ</span><span class="dttl">Домой на «Ласточке»</span><span class="chev">▼</span></summary>
+    <div class="dbody">
+      <ul class="tl">
+        <li><b>08:00</b><span>Подъём, завтрак, последние сборы</span></li>
+        <li><b>09:45</b><span>Выезжаем на Московский вокзал</span></li>
+        <li><b>10:20</b><span>Мы на вокзале — с запасом, а не бегом</span></li>
+        <li><b>10:56</b><span>«Ласточка» № 717Г отправляется</span></li>
+        <li><b>14:54</b><span>Москва, Восточный вокзал. Ехали 3 часа 58 минут</span></li>
+        <li><b>~16:00</b><span>Дома</span></li>
+      </ul>
+      <div class="hint">В поезде 4 часа сидим. Наушники, мультики и перекус — в рюкзак сверху, чтобы не искать.</div>
+    </div>
+  </details>
+</section>
+
+<!-- ============ 04 АКВАПАРК ============ -->
+<section class="wrap">
+  <div class="tag"><span class="num">04</span> Главное событие</div>
+  <h2>Аквапарк «Океанис»</h2>
+  <p class="sub">Среда, 19 августа. Проспект Гагарина, 35, корпус 1. Работает с 10:00 до 22:00.</p>
+
+  <div class="card">
+    <b>Что берём с собой:</b> купальники, сланцы каждому, полотенца, нарукавники Дане, сменные трусы и пакет для мокрого. Билеты покупаем заранее онлайн — электронный билет приходит на почту от 30 минут до 2 часов.
+    <table class="price">
+      <tr><th>Кто</th><th>Билет на 4 часа</th></tr>
+      <tr><td>Папа</td><td>3 490 ₽</td></tr>
+      <tr><td>Мама</td><td>3 490 ₽</td></tr>
+      <tr><td>Дима, 7 лет (детский, 5–13)</td><td>2 290 ₽</td></tr>
+      <tr><td>Даня, 4 года (малышам до 4 лет включительно)</td><td>бесплатно</td></tr>
+      <tr><td><b>Всего</b></td><td><b>9 270 ₽</b></td></tr>
+    </table>
+  </div>
+
+  <ol class="route">
+    <li class="stop"><span class="dot">1</span><h3>Приходим к открытию</h3><p>В 10:00 очередей ещё нет, и на горки можно залезать почти без ожидания.</p></li>
+    <li class="stop"><span class="dot">2</span><h3>Сначала — детская зона</h3><p>Даня начинает с мелкой воды и маленьких горок. Дима может сразу пробовать большие.</p></li>
+    <li class="stop"><span class="dot">3</span><h3>Перерыв на еду внутри</h3><p>Выходить и заходить обратно нельзя, поэтому едим в кафе прямо в аквапарке.</p></li>
+    <li class="stop"><span class="dot">4</span><h3>Финал: самая длинная горка</h3><p>Кто прокатится с самой длинной — тот молодец. Отмечаем это в квесте ниже.</p></li>
+  </ol>
+
+  <div class="warn">Тарифы и часы работы иногда меняются — родители проверят на сайте аквапарка накануне.</div>
+</section>
+
+<!-- ============ 05 СМОТРИ ВНИМАТЕЛЬНО ============ -->
+<section class="wrap">
+  <div class="tag"><span class="num">05</span> Экспонаты</div>
+  <h2>Смотри внимательно</h2>
+  <p class="sub">Пять вещей, которые встретятся вживую. Не пробегай мимо — подойди и рассмотри.</p>
+  <div class="facts">
+
+    <details class="fact">
+      <summary><span class="fn">👁</span><span class="ft">Дмитриевская башня</span><span class="chev">▼</span></summary>
+      <div class="fbody">
+        <div class="carousel"><div class="track">
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Dmitrievskaya_Tower_of_the_Nizhny_Novgorod_Kremlin_01.jpg?width=900" alt="Дмитриевская башня" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Главные ворота кремля</div><div class="fallback"><span class="emoji">🚪</span><span>Дмитриевская башня</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Dmitrievskaya_Tower_of_Nizhny_Novgorod_Kremlin_1896.jpg?width=900" alt="Башня в 1896 году" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Та же башня в 1896 году — найди отличия</div><div class="fallback"><span class="emoji">📜</span><span>Башня в 1896 году</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Dmitrievskaya_Tower_and_the_Arsenal.jpg?width=900" alt="Башня и Арсенал" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">За башней — Арсенал, где хранили оружие</div><div class="fallback"><span class="emoji">🛡️</span><span>Арсенал</span></div></div>
+        </div><button class="cbtn prev" aria-label="Назад">‹</button><button class="cbtn next" aria-label="Вперёд">›</button><div class="dots"></div></div>
+        <p>Это главные ворота кремля — через них входили все, и друзья, и враги. Раньше перед башней был ров с водой и подъёмный мост: поднял мост — и в крепость не попасть. Сейчас в башне касса, там мы возьмём билеты на стену.</p>
+        <p style="color:var(--accent-deep);margin-top:8px;"><b>Что заметить:</b> подойди вплотную и посмотри, из каких огромных кирпичей сложена стена. Внизу она толще, чем наверху — так крепче.</p>
+        <button class="speak">🔊 Прочитать вслух</button>
+      </div>
+    </details>
+
+    <details class="fact">
+      <summary><span class="fn">👁</span><span class="ft">Памятник Валерию Чкалову</span><span class="chev">▼</span></summary>
+      <div class="fbody">
+        <div class="carousel"><div class="track">
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Monument_to_Valery_Chkalov_Nizhny_Novgorod.jpg?width=900" alt="Памятник Чкалову" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Лётчик смотрит на Волгу</div><div class="fallback"><span class="emoji">✈️</span><span>Памятник Чкалову</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Chkalov_Stairs_From_Above_2018.jpg?width=900" alt="Вид от памятника" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">От его ног начинается лестница вниз</div><div class="fallback"><span class="emoji">🪜</span><span>Лестница вниз</span></div></div>
+        </div><button class="cbtn prev" aria-label="Назад">‹</button><button class="cbtn next" aria-label="Вперёд">›</button><div class="dots"></div></div>
+        <p>Чкалов стоит на самом краю высокого берега, в лётной куртке и в тёплых унтах — так одевались, когда летали высоко и было очень холодно. Он смотрит на реку, будто прикидывает маршрут.</p>
+        <p style="color:var(--accent-deep);margin-top:8px;"><b>Что заметить:</b> встань рядом и посмотри в ту же сторону, что и он. Отсюда открывается один из самых широких видов на Волгу во всём городе.</p>
+        <button class="speak">🔊 Прочитать вслух</button>
+      </div>
+    </details>
+
+    <details class="fact">
+      <summary><span class="fn">👁</span><span class="ft">Чкаловская лестница</span><span class="chev">▼</span></summary>
+      <div class="fbody">
+        <div class="carousel"><div class="track">
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Chkalov_Stairs_Front_View_2018.jpg?width=900" alt="Чкаловская лестница" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">560 ступеней</div><div class="fallback"><span class="emoji">🪜</span><span>560 ступеней</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Chkalov_Stairs_From_Above_2018.jpg?width=900" alt="Лестница сверху" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Сверху — две петли, как цифра 8</div><div class="fallback"><span class="emoji">8️⃣</span><span>Форма восьмёрки</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Chkalov_Stairs_in_1954.jpg?width=900" alt="Лестница в 1954 году" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">1954 год: деревья ещё маленькие</div><div class="fallback"><span class="emoji">📷</span><span>1954 год</span></div></div>
+        </div><button class="cbtn prev" aria-label="Назад">‹</button><button class="cbtn next" aria-label="Вперёд">›</button><div class="dots"></div></div>
+        <p>Лестница не идёт прямо вниз — она расходится на два кольца и снова сходится. Из-за этого сверху получается цифра 8. Спускаться по ней долго, и на середине обязательно захочется сесть на ступеньку и посмотреть на реку.</p>
+        <p style="color:var(--accent-deep);margin-top:8px;"><b>Что заметить:</b> попробуй считать ступени вслух до сотни. Дальше можно сбиться — все сбиваются.</p>
+        <button class="speak">🔊 Прочитать вслух</button>
+      </div>
+    </details>
+
+    <details class="fact">
+      <summary><span class="fn">👁</span><span class="ft">Пакгаузы на Стрелке</span><span class="chev">▼</span></summary>
+      <div class="fbody">
+        <div class="carousel"><div class="track">
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nizhny_Novgorod%2C_Strelka._Frames_of_the_former_warehouses_05-2023.jpg?width=900" alt="Пакгаузы" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Железные кружева, которым больше 100 лет</div><div class="fallback"><span class="emoji">🕸️</span><span>Пакгаузы</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nizhny_Novgorod._Pavilions_with_heritage_frames_at_The_Strelka_Side_08-2022.jpg?width=900" alt="Павильоны на Стрелке" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Стеклянный зал построили прямо внутри старого каркаса</div><div class="fallback"><span class="emoji">🏗️</span><span>Зал внутри каркаса</span></div></div>
+        </div><button class="cbtn prev" aria-label="Назад">‹</button><button class="cbtn next" aria-label="Вперёд">›</button><div class="dots"></div></div>
+        <p>Эти железные конструкции собрали в 1896 году для огромной выставки. Потом их сто лет использовали как склады, а недавно очистили и построили внутри стеклянный концертный зал. Получилось, что новый дом стоит внутри старого скелета.</p>
+        <p style="color:var(--accent-deep);margin-top:8px;"><b>Что заметить:</b> посмотри на места, где балки соединяются. Тогда металл ещё не варили — его склёпывали заклёпками, и каждую забивали вручную.</p>
+        <button class="speak">🔊 Прочитать вслух</button>
+      </div>
+    </details>
+
+    <details class="fact">
+      <summary><span class="fn">👁</span><span class="ft">Место, где Ока впадает в Волгу</span><span class="chev">▼</span></summary>
+      <div class="fbody">
+        <div class="carousel"><div class="track">
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Gorky_City._View_to_confluence_of_Volga_and_Oka_Rivers.jpg?width=900" alt="Слияние Оки и Волги" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">Две реки встречаются здесь</div><div class="fallback"><span class="emoji">🌊</span><span>Слияние рек</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/2022-11-05_-_View_to_Oka_and_Volga_from_Kremlin.jpg?width=900" alt="Вид из кремля" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">То же самое, но со стены кремля</div><div class="fallback"><span class="emoji">👀</span><span>Вид из кремля</span></div></div>
+          <div class="slide"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nizhny_Novgorod_ISS_view.jpg?width=900" alt="Вид из космоса" loading="lazy" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap">А это снимок с космической станции</div><div class="fallback"><span class="emoji">🛰️</span><span>Из космоса</span></div></div>
+        </div><button class="cbtn prev" aria-label="Назад">‹</button><button class="cbtn next" aria-label="Вперёд">›</button><div class="dots"></div></div>
+        <p>Две реки не смешиваются сразу — какое-то время они текут рядом, каждая своего оттенка, и между ними видно полосу. Дальше по течению всё перемешается, а здесь ещё можно увидеть границу.</p>
+        <p style="color:var(--accent-deep);margin-top:8px;"><b>Что заметить:</b> ищи полосу в солнечный день и стой лицом к воде. Ока приходит слева, Волга уходит направо.</p>
+        <button class="speak">🔊 Прочитать вслух</button>
+      </div>
+    </details>
+
+  </div>
+</section>
+
+<!-- ============ 06 КВЕСТ ============ -->
+<section class="wrap">
+  <div class="tag"><span class="num">06</span> Квест</div>
+  <h2>Найди это на месте</h2>
+  <p class="sub">Нашёл — ставь галочку. Соберёшь все восемь — получишь значок исследователя 🔍</p>
+  <div class="facts" data-badge-src="quest">
+    <label class="card" style="display:flex;gap:12px;align-items:center;cursor:pointer;margin-bottom:10px;"><input type="checkbox" class="questbox" style="width:22px;height:22px;accent-color:var(--accent);"><span>Дмитриевская башня — главные ворота кремля</span></label>
+    <label class="card" style="display:flex;gap:12px;align-items:center;cursor:pointer;margin-bottom:10px;"><input type="checkbox" class="questbox" style="width:22px;height:22px;accent-color:var(--accent);"><span>Настоящая пушка или военная машина внутри кремля</span></label>
+    <label class="card" style="display:flex;gap:12px;align-items:center;cursor:pointer;margin-bottom:10px;"><input type="checkbox" class="questbox" style="width:22px;height:22px;accent-color:var(--accent);"><span>Памятник Чкалову — лётчик в куртке и унтах</span></label>
+    <label class="card" style="display:flex;gap:12px;align-items:center;cursor:pointer;margin-bottom:10px;"><input type="checkbox" class="questbox" style="width:22px;height:22px;accent-color:var(--accent);"><span>Сотая ступенька Чкаловской лестницы (считаем вслух!)</span></label>
+    <label class="card" style="display:flex;gap:12px;align-items:center;cursor:pointer;margin-bottom:10px;"><input type="checkbox" class="questbox" style="width:22px;height:22px;accent-color:var(--accent);"><span>Бронзовая фигура на Большой Покровской — например, городовой или коза</span></label>
+    <label class="card" style="display:flex;gap:12px;align-items:center;cursor:pointer;margin-bottom:10px;"><input type="checkbox" class="questbox" style="width:22px;height:22px;accent-color:var(--accent);"><span>Полоса на воде там, где Ока встречается с Волгой</span></label>
+    <label class="card" style="display:flex;gap:12px;align-items:center;cursor:pointer;margin-bottom:10px;"><input type="checkbox" class="questbox" style="width:22px;height:22px;accent-color:var(--accent);"><span>Заклёпки на железных балках пакгаузов</span></label>
+    <label class="card" style="display:flex;gap:12px;align-items:center;cursor:pointer;margin-bottom:10px;"><input type="checkbox" class="questbox" style="width:22px;height:22px;accent-color:var(--accent);"><span>Самая длинная горка в аквапарке «Океанис» — и прокатиться по ней</span></label>
+  </div>
+</section>
+
+<!-- ============ 07 ЧТО РЯДОМ ============ -->
+<section class="wrap">
+  <div class="tag"><span class="num">07</span> Рядом</div>
+  <h2>Что ещё рядом, если останутся силы</h2>
+  <p class="sub">Все эти места близко к нашему маршруту — можно заглянуть без отдельной поездки.</p>
+
+  <div class="card"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/%D0%9F%D0%B0%D1%80%D0%BA_%C2%AB%D0%A8%D0%B2%D0%B5%D0%B9%D1%86%D0%B0%D1%80%D0%B8%D1%8F%C2%BB%2C_%D0%9D%D0%B8%D0%B6%D0%BD%D0%B8%D0%B9_%D0%9D%D0%BE%D0%B2%D0%B3%D0%BE%D1%80%D0%BE%D0%B4.jpg?width=900" alt="Парк Швейцария" loading="lazy" onerror="this.style.display='none'"><b>Парк «Швейцария»</b> — прямо напротив аквапарка, через дорогу. 14 детских площадок, сухой фонтан, дорожки вдоль обрыва над Окой и небольшой зоопарк внутри. Вход в сам парк бесплатный.</div>
+
+  <div class="card"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nizhnevolzhskaya_Embankment._Nizhny_Novgorod%2C_2024-06.jpg?width=900" alt="Нижневолжская набережная" loading="lazy" onerror="this.style.display='none'"><b>Нижневолжская набережная</b> — то, куда мы спустимся по Чкаловской лестнице. Широкая прогулочная набережная у самой воды, оттуда же отходят теплоходы.</div>
+
+  <div class="card"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nizhny_Novgorod_29-04-2024_Rozhdestvenskaya_Street.jpg?width=900" alt="Рождественская улица" loading="lazy" onerror="this.style.display='none'"><b>Рождественская улица</b> — старинная купеческая улица с красивыми домами и кафе, в двух шагах от набережной. Хорошее место для ужина после теплохода.</div>
+
+  <div class="card"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Nizhny_Novgorod._Saved_heritage_facade_of_new_Planetarium_(Revolyutsionnaya_St%2C_20).jpg?width=900" alt="Нижегородский планетарий" loading="lazy" onerror="this.style.display='none'"><b>Планетарий имени Гречко</b> — улица Революционная, 20. Первый цифровой планетарий в России, есть полнокупольные мультфильмы для малышей. Работает со вторника по воскресенье, понедельник — выходной. Запасной вариант, если один из дней сорвётся.</div>
+</section>
+
+<!-- ============ 08 АФИША ============ -->
+<section class="wrap">
+  <div class="tag"><span class="num">08</span> Афиша</div>
+  <h2>Что идёт в городе в наши дни</h2>
+  <p class="sub">По афише на 18–21 августа. Билеты и даты меняются — родители проверят накануне.</p>
+
+  <div class="card"><b>Итальянский цирк: слоны и тигры</b> · 20 августа — представление с животными, билеты примерно от 1 000 ₽. Совпадает с нашим зоопарковым днём, так что либо одно, либо другое.</div>
+
+  <div class="card"><b>«Смешарики сквозь вселенные»</b> · идёт в кинотеатрах города — вариант на дождливый вечер.</div>
+
+  <div class="card"><b>«Мульт в кино», выпуск № 198</b> · короткие мультфильмы одной программой, удобно для четырёхлетнего: недолго и не страшно.</div>
+
+  <div class="card"><b>Поездка к озеру Светлояр и Китеж-граду</b> · 18 августа, от 3 100 ₽ с человека. Легенда о городе, который ушёл под воду. Красиво, но это целый день и далеко за городом — в наш план не влезает.</div>
+
+  <div class="warn">День города и фестиваль воздушных шаров «Приволжская фиеста» прошли 13–16 августа — мы приезжаем сразу после них. Зато в городе будет спокойнее и меньше очередей.</div>
+</section>
+
+<!-- ============ РОДИТЕЛЮ ============ -->
+<section class="wrap">
+  <details class="parent">
+    <summary>👩‍👦 Для родителей — практика и то, что легко упустить</summary>
+    <p><b>Канатная дорога закрыта.</b> Не работает с 5 июля 2026 года, срок устранения нарушений — до мая 2027-го. Все путеводители советуют её как главный детский аттракцион. Замена в этом плане — часовая прогулка на теплоходе 18 августа.</p>
+    <p><b>Аквапарк без права выхода.</b> Вышли из «Океаниса» — посещение закончено, обратно по тому же билету не пустят. Всё нужное берите внутрь, есть в кафе комплекса. Малышам до 4 лет включительно вход в аквазону бесплатный, но в термы им нужен отдельный билет 500 ₽ и только в кассе.</p>
+    <p><b>Поезд назад.</b> «Ласточка» № 717Г, 10:56 → 14:54 на Восточный вокзал. Запас до массажа в 18:00 — около трёх часов. Поезд в 13:36 не подходит: прибывает в 17:39. Билеты брать сейчас, Дане (4 года) — отдельное детское место, четыре часа на коленях не выйдет.</p>
+    <p><b>Ритм дня.</b> С четырёхлеткой обязательна пауза дома в середине дня, иначе вечерняя часть срывается. В плане на 18 августа она стоит в 16:00 — не пропускайте её ради ещё одной достопримечательности.</p>
+    <p><b>Вопросы детям по дороге:</b> «Почему крепость построили именно на горе, а не внизу у воды?» · «Как думаешь, зачем лестницу сделали петлями, а не прямой?» · «Что тяжелее — построить дом из железа или из камня?»</p>
+    <p><b>Бюджет:</b> примерно 98 000 ₽ на всю поездку без авиабилетов — жильё, еда, развлечения, такси и обратный поезд. Подробная разбивка — в файле с планом.</p>
+  </details>
+</section>
+
+<!-- ============ ФИНАЛ ============ -->
+<section class="wrap" style="text-align:center;">
+  <div class="game" data-badge-src="finish">
+    <div class="prompt">🏅 Диплом исследователей: Дима и Даня</div>
+    <p class="sub" style="margin:0 0 14px;">Прошли все разделы — жмите кнопку.</p>
+    <button class="reveal" onclick="this.nextElementSibling.classList.add('show');document.dispatchEvent(new CustomEvent('gotbadge',{detail:'finish'}))">Завершить экспедицию</button>
+    <div class="answer" style="text-align:center;">Экспедиция засчитана! Дима — капитан, Даня — юнга, оба настоящие исследователи Нижнего Новгорода. 🎉</div>
+  </div>
+</section>
+
+<footer class="wrap">
+  <div class="stamp">Две реки, тринадцать башен, пятьсот шестьдесят ступеней</div>
+  <div>Хорошего приключения, Дима и Даня!</div>
+</footer>
+
+<script>
+  /* ---- Карусели ---- */
+  document.querySelectorAll('.carousel').forEach(function(car){
+    var track=car.querySelector('.track'), slides=[].slice.call(track.children), dots=car.querySelector('.dots');
+    slides.forEach(function(_,i){var d=document.createElement('i');if(!i)d.className='on';d.onclick=function(){slides[i].scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});};dots.appendChild(d);});
+    function upd(){var idx=Math.round(track.scrollLeft/track.clientWidth);[].forEach.call(dots.children,function(d,i){d.className=i===idx?'on':'';});}
+    track.addEventListener('scroll',function(){window.requestAnimationFrame(upd);});
+    car.querySelector('.prev').onclick=function(){track.scrollBy({left:-track.clientWidth,behavior:'smooth'});};
+    car.querySelector('.next').onclick=function(){track.scrollBy({left:track.clientWidth,behavior:'smooth'});};
+  });
+
+  /* ---- Озвучка ---- */
+  document.querySelectorAll('.speak').forEach(function(b){
+    b.onclick=function(){
+      var txt=b.parentElement.querySelector('p').textContent;
+      if(!('speechSynthesis' in window)){b.textContent='🔇 недоступно';return;}
+      speechSynthesis.cancel();
+      var u=new SpeechSynthesisUtterance(txt);u.lang='ru-RU';u.rate=.95;speechSynthesis.speak(u);
+    };
+  });
+
+  /* ---- Игра «выбери правильный» ---- */
+  document.querySelectorAll('.game .opts').forEach(function(opts){
+    opts.querySelectorAll('.opt').forEach(function(o){
+      o.onclick=function(){
+        if(o.dataset.correct){o.classList.add('right');opts.parentElement.querySelector('.answer').classList.add('show');
+          document.dispatchEvent(new CustomEvent('gotbadge',{detail:opts.parentElement.dataset.badgeSrc}));}
+        else{o.classList.add('wrong');}
+      };
+    });
+  });
+
+  /* ---- Квиз для Димы ---- */
+  (function(){
+    var Q=[
+      {q:'Сколько башен у Нижегородского кремля?',a:['8','13','20'],ok:1,why:'Тринадцать башен, и у каждой своё имя.'},
+      {q:'Сколько ступеней у Чкаловской лестницы?',a:['100','560','5000'],ok:1,why:'560 ступеней. Мы пойдём по ним сверху вниз.'},
+      {q:'Какая река самая длинная в Европе?',a:['Ока','Волга','Днепр'],ok:1,why:'Волга — 3530 километров.'},
+      {q:'Как назывался город с 1932 по 1990 год?',a:['Горький','Владимир','Ярославль'],ok:0,why:'Горький — в честь писателя, который здесь родился.'},
+      {q:'В каком году основали Нижний Новгород?',a:['1221','1812','1961'],ok:0,why:'В 1221 году. В 2026-м городу 805 лет.'}
+    ];
+    var i=0,score=0,box=document.getElementById('qbtns'),txt=document.getElementById('qtext'),
+        prog=document.getElementById('qprog'),done=document.getElementById('qdone');
+    if(!box)return;
+    function render(){
+      if(i>=Q.length){
+        prog.textContent='Готово!';txt.textContent='';box.innerHTML='';
+        done.textContent='Правильных ответов: '+score+' из '+Q.length+(score===Q.length?'. Идеально! 🎉':'. Отлично!');
+        done.classList.add('show');
+        if(score>=4)document.dispatchEvent(new CustomEvent('gotbadge',{detail:'quiz'}));
+        return;
+      }
+      prog.textContent='Вопрос '+(i+1)+' из '+Q.length;
+      txt.textContent=Q[i].q;
+      box.innerHTML='';
+      Q[i].a.forEach(function(t,k){
+        var b=document.createElement('button');
+        b.className='qbtn';b.type='button';b.textContent=t;
+        b.onclick=function(){
+          if(box.dataset.lock)return;box.dataset.lock='1';
+          if(k===Q[i].ok){b.classList.add('right');score++;}
+          else{b.classList.add('wrong');box.children[Q[i].ok].classList.add('right');}
+          done.textContent=Q[i].why;done.classList.add('show');
+          setTimeout(function(){i++;delete box.dataset.lock;done.classList.remove('show');render();},1600);
+        };
+        box.appendChild(b);
+      });
+    }
+    render();
+  })();
+
+  /* ---- Игра на память ---- */
+  (function(){
+    var pairs=['🏰','🚂','🛝','🦁','⛴️','🌊'];
+    var deck=pairs.concat(pairs).sort(function(){return Math.random()-.5;});
+    var open=[],matched=0,box=document.getElementById('mem'),done=document.getElementById('memdone');
+    if(!box)return;
+    deck.forEach(function(e){
+      var c=document.createElement('div');c.className='mopt';c.textContent='❓';c.dataset.e=e;
+      c.onclick=function(){
+        if(c.textContent!=='❓'||open.length>1)return;
+        c.textContent=e;open.push(c);
+        if(open.length===2){
+          var a=open[0],b=open[1];
+          setTimeout(function(){
+            if(a.dataset.e===b.dataset.e){
+              a.classList.add('right');b.classList.add('right');matched++;
+              if(matched===pairs.length){done.classList.add('show');document.dispatchEvent(new CustomEvent('gotbadge',{detail:'game'}));}
+            }else{a.textContent='❓';b.textContent='❓';}
+            open=[];
+          },700);
+        }
+      };
+      box.appendChild(c);
+    });
+  })();
+
+  /* ---- Прогресс и бейджи ---- */
+  var KEY='adv:nn2026', store;
+  try{store=JSON.parse(localStorage.getItem(KEY))||{};}catch(e){store={};}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
+  function grant(id){if(!id||store[id])return;store[id]=1;save();paint();}
+  function paint(){document.querySelectorAll('#badges .badge').forEach(function(b){if(store[b.dataset.badge])b.classList.add('got');});}
+  document.addEventListener('gotbadge',function(e){grant(e.detail);});
+  (function(){var box=document.querySelector('[data-badge-src="facts"]');if(!box)return;var f=box.querySelectorAll('.fact');var seen={};f.forEach(function(d){d.addEventListener('toggle',function(){if(d.open){seen[[].indexOf.call(f,d)]=1;if(Object.keys(seen).length>=f.length)grant('facts');}});});})();
+  (function(){var box=document.querySelector('[data-badge-src="quest"]');if(!box)return;var c=box.querySelectorAll('.questbox');c.forEach(function(x){x.addEventListener('change',function(){if([].every.call(c,function(y){return y.checked;}))grant('quest');});});})();
+  paint();
+</script>
+</body>
+</html>
