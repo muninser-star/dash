@@ -133,8 +133,8 @@ async function load() {
 }
 
 // ── отрисовка ──
-function render() {
-  if (S.view === "film" && !S.recBusy && document.activeElement && document.activeElement.closest && document.activeElement.closest("#recForm")) return;   // не сбрасываем форму под руками
+function render(force) {
+  if (!force && S.view === "film" && !S.recBusy && document.activeElement && document.activeElement.closest && document.activeElement.closest("#recForm")) return;   // не сбрасываем форму под руками
   if (S.form && document.activeElement && document.activeElement.closest("form.add")) return;
   const now = new Date(), msk = Dash.msk(now);
   $("hDate").textContent = new Intl.DateTimeFormat("ru-RU", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Moscow" }).format(now);
@@ -390,7 +390,7 @@ document.addEventListener("submit", async (ev) => {
   S.form2 = { mode: d.get("mode") || "solo", moods: d.getAll("mood"), wish: String(d.get("wish") || "").trim(), format: d.get("format"), count: d.get("count"), rewatch: !!d.get("rewatch") };
   S.mode = S.form2.mode; lsSet("dash_mode", S.mode); S.recBusy = true; S.recErr = null; render();
   try { S.rec = await api("dash", "films_recommend", S.form2); } catch (e) { S.recErr = e.message === "error" ? "сервер не ответил, попробуйте ещё раз" : e.message; }
-  S.recBusy = false; render();
+  S.recBusy = false; render(true);   // результат показываем, даже если пока ждали, нажали что-то в форме
 });
 boot();
 </script>
