@@ -75,7 +75,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<
 const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
 let KEY = lsGet(KEY_LS), RULES = null;
-const S = { kids: null, health: null, film: null, fin: null, mode: lsGet("dash_mode") || "family", form: false, undo: false, view: null, bet: null, rec: null, recBusy: false, recErr: null, form2: null };
+const S = { kids: null, health: null, film: null, fin: null, polza: null, mode: lsGet("dash_mode") || "family", form: false, undo: false, view: null, bet: null, rec: null, recBusy: false, recErr: null, form2: null };
 window.addEventListener("hashchange", () => { S.view = location.hash === "#film" ? "film" : null; render(); });
 
 async function api(fn, action, payload) {
@@ -125,6 +125,7 @@ async function load() {
     S.health = { items: Dash.healthItems(m.data), states };
     render();
   }).catch(() => { S.health = { error: true }; render(); });
+  api("dash", "polza").then((j) => { S.polza = j; renderPlates(); }).catch(() => { S.polza = { error: true }; renderPlates(); });
   api("dash", "finance").then((j) => { S.fin = j; render(); }).catch((e) => { S.fin = { error: e.message }; render(); });
   api("dash", "films_pick", { mode: S.mode }).then((j) => { S.film = j; S.bet = null; render(); }).catch(() => { S.film = { error: true }; render(); });
 }
@@ -280,8 +281,18 @@ function filmView() {
   const D = S.rec || S.film;
   return filmForm() + filmResults(D && !D.error ? D : null);
 }
+// Подпись плашки с балансом: «233,28 ₽ · пополнить»; пока грузится — «…», не ответил — обычная подпись
+function plateCaption(p) {
+  if (!p.url) return "Скоро";
+  if (p.balance !== "polza") return esc(p.caption);
+  const B = S.polza;
+  if (!B) return "Баланс…";
+  if (B.error || !isFinite(B.amount)) return esc(p.caption);
+  const sum = B.amount.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `<b${B.amount < 100 ? ' style="color:var(--error)"' : ""}>${sum} ₽</b> · пополнить`;
+}
 function renderPlates() {
-  $("plates").innerHTML = RULES.map((p) => `<a class="section-tile ${p.url ? "" : "t-muted"}" href="${esc(p.withCode ? medUrl() : p.url || "#")}"><span class="section-tile__ic"><svg class="ic" aria-hidden="true"><use href="#i-${esc(p.ic || "star")}"/></svg></span><b>${esc(p.title)}</b><span class="t-text-s t-muted">${p.url ? esc(p.caption) : "Скоро"}</span></a>`).join("");
+  $("plates").innerHTML = RULES.map((p) => `<a class="section-tile ${p.url ? "" : "t-muted"}" href="${esc(p.withCode ? medUrl() : p.url || "#")}"${p.balance ? ' target="_blank" rel="noopener"' : ""}><span class="section-tile__ic"><svg class="ic" aria-hidden="true"><use href="#i-${esc(p.ic || "star")}"/></svg></span><b>${esc(p.title)}</b><span class="t-text-s t-muted">${plateCaption(p)}</span></a>`).join("");
 }
 
 // ── действия ──

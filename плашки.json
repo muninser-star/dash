@@ -34,5 +34,13 @@
     "url": "adventures/",
     "icon": "🧭",
     "ic": "search"
+  },
+  {
+    "title": "Polza",
+    "caption": "Баланс · пополнить",
+    "url": "https://polza.ai/dashboard",
+    "icon": "💳",
+    "ic": "wallet",
+    "balance": "polza"
   }
 ]
