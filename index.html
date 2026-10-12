@@ -101,7 +101,7 @@ async function boot() {
   try { await api("dash", "ping"); }
   catch (e) { if (e.forbidden) { lsSet(KEY_LS, null); KEY = null; return showGate("Код не подошёл — откройте ссылку с кодом ещё раз."); }
     $("app").hidden = false; $("focus").innerHTML = `<div class="card">Нет связи · <button class="btn btn-secondary sm" onclick="location.reload()">Повторить</button></div>`; return; }
-  RULES = await (await fetch("плашки.json")).json();
+  RULES = await (await fetch("плашки.json", { cache: "no-cache" })).json();
   $("gate").hidden = true; $("app").hidden = false; $("appHeader").hidden = false;
   fetch("icons.svg").then((r) => r.text()).then((t) => { const d = document.createElement("div"); d.style.display = "none"; d.innerHTML = t; document.body.prepend(d); }).catch(() => {});
   S.view = location.hash === "#film" ? "film" : null;
