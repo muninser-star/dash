@@ -58,5 +58,13 @@
     "icon": "🗄️",
     "ic": "dynamics",
     "balance": "usage"
+  },
+  {
+    "title": "Yandex Cloud",
+    "caption": "Баланс · пополнить",
+    "url": "https://billing.yandex.cloud/",
+    "icon": "☁️",
+    "ic": "drive",
+    "balance": "ycloud"
   }
 ]
