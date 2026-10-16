@@ -33,6 +33,18 @@ main{max-width:var(--content-wide);margin:0 auto;padding:var(--sp-4) max(16px,en
 .hint button{height:32px;padding:0 12px;border-radius:var(--r-pill);border:0;background:var(--surface-1);color:var(--text-primary);cursor:pointer;font:400 13px/18px var(--font)}
 .btn.sm{height:32px;padding:0 12px;font-size:13px}
 [hidden]{display:none!important}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:var(--sp-2)}
+.tile{padding:var(--sp-3);background:var(--surface-1);border-radius:var(--r-xl);display:grid;gap:6px;align-content:start}
+.tile .cat{font:500 14px/18px var(--font);color:var(--text-secondary)}
+.tile .win{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.tile .win b{font:700 18px/22px var(--font)}
+.tile .win .p{font:700 28px/30px var(--font);font-variant-numeric:tabular-nums}
+.tile .alt{font:400 13px/18px var(--font);color:var(--text-secondary)}
+.tile.zero .p{color:var(--text-secondary);font-weight:500}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:baseline}
+details.more>summary{cursor:pointer;font:600 16px/22px var(--font);list-style:none}
+details.more>summary::after{content:' ▾';color:var(--text-secondary)}
+details.more[open]>summary::after{content:' ▴'}
 .err{color:var(--text-negative)}
 </style></head>
 <body>
@@ -93,6 +105,19 @@ function calc() {
   return { months, full, rows, partners, rules, spend };
 }
 
+const CARD_COLORS = { "t-den": "#f5b800", "t-ann": "#d99a00", "ya-den": "#7b61ff", "ya-ann": "#c04bd9", "alfa": "#e5322d" };
+const shortName = (t) => t.replace(" · ", " ");
+function tiles(c) {
+  return c.rows.map((r) => {
+    const sorted = r.per.slice().sort((a, b) => b.pct - a.pct);
+    const top = sorted.filter((p) => p.pct === sorted[0].pct), next = sorted.find((p) => p.pct < sorted[0].pct && p.pct > 0);
+    const zero = sorted[0].pct === 0;
+    const name = (p) => `<span class="dot" style="background:${CARD_COLORS[p.c.id] || "var(--accent)"}"></span>${esc(shortName(p.c.title))}`;
+    return `<div class="tile ${zero ? "zero" : ""}"><div class="cat">${esc(r.cat)}${r.partner ? " · партнёр" : ""}</div>
+      <div class="win"><b>${zero ? "любой, кэшбэка нет" : top.map(name).join("<br>")}</b>${zero ? "" : `<span class="p">${sorted[0].pct}%</span>`}</div>
+      ${next ? `<div class="alt">запасная: ${name(next)} ${next.pct}%</div>` : ""}</div>`;
+  }).join("");
+}
 function render() {
   const d = S.d, c = calc();
   const monthsWithRules = [...new Set(d.rules.map((r) => r.month))].sort().reverse();
@@ -104,12 +129,14 @@ function render() {
     ${r.per.map((p) => `<td class="n"><span class="pct ${p.pct === r.best.pct ? "" : "low"}">${p.pct}%</span>${p.boosted ? "<sup title='повышенный в этом месяце'>★</sup>" : ""}</td>`).join("")}
     <td class="n"><b>${rub(r.gain)}</b></td></tr>`).join("");
   $("main").innerHTML = `
-  <section class="card wide"><h2>Какой картой платить <span class="sel"><label class="t-text-s t-muted" for="mSel">Месяц</label><select class="select" id="mSel">${monthsWithRules.map((m) => `<option value="${m}" ${m === S.month ? "selected" : ""}>${monthName(m)}</option>`).join("")}</select></span></h2>
-    <div class="kpis"><div class="kpi"><div class="kpi__lab">кэшбэк в месяц при лучших картах</div><div class="kpi__val">${rub(total)}</div></div>
+  <section class="card wide"><h2>Чем платить сейчас — ${monthName(S.month)} <span class="sel"><label class="t-text-s t-muted" for="mSel">Месяц</label><select class="select" id="mSel">${monthsWithRules.map((m) => `<option value="${m}" ${m === S.month ? "selected" : ""}>${monthName(m)}</option>`).join("")}</select></span></h2>
+    <div class="grid">${tiles(c)}</div>
+    <details class="more" style="margin-top:var(--sp-4)"><summary>Таблица по всем картам и сколько это даёт в месяц</summary>
+    <div class="kpis" style="margin-top:var(--sp-3)"><div class="kpi"><div class="kpi__lab">кэшбэк в месяц при лучших картах</div><div class="kpi__val">${rub(total)}</div></div>
       <div class="kpi"><div class="kpi__lab">трат, которые дают кэшбэк</div><div class="kpi__val">${rub(spendSum)}</div></div>
       <div class="kpi"><div class="kpi__lab">в среднем, %</div><div class="kpi__val">${spendSum ? (total / spendSum * 100).toFixed(1).replace(".", ",") : 0}%</div></div></div>
     <div style="overflow:auto"><table class="tbl"><thead><tr><th>Категория (траты в среднем за ${c.full.length} мес)</th>${cardHead}<th class="n">Кэшбэк/мес</th></tr></thead><tbody>${table}</tbody></table></div>
-    <p class="t-text-s t-muted">Зелёная плашка — лучшая карта в категории, ★ — повышенный процент этого месяца, серый — базовый. Считаем по средним тратам трёх последних полных месяцев, без аренды, детских расходов, переводов и ипотеки. Партнёрские строки (Перекрёсток, Пятёрочка) считаются по августу–сентябрю: раньше в выгрузке нет названий магазинов; «Супермаркеты» — без них. Лимиты бонусов не учтены: у Яндекса до 10 000 баллов в месяц.</p>
+    <p class="t-text-s t-muted">Зелёная плашка — лучшая карта в категории, ★ — повышенный процент этого месяца, серый — базовый. Считаем по средним тратам трёх последних полных месяцев, без аренды, детских расходов, переводов и ипотеки. Партнёрские строки (Перекрёсток, Пятёрочка) считаются по августу–сентябрю: раньше в выгрузке нет названий магазинов; «Супермаркеты» — без них. Лимиты бонусов не учтены: у Яндекса до 10 000 баллов в месяц.</p></details>
     
   </section>
   <section class="card"><h2>Карты и категории ${monthName(S.month)}</h2><div class="cards">${d.cards.map((x) => {
