@@ -59,33 +59,48 @@ async function api(action, payload) {
   return j;
 }
 
+const PARTNER_RX = { "Перекрёсток": /perekr|перекр/i, "Пятёрочка": /pyater|пятер/i };
 function calc() {
   const d = S.d, cards = d.cards;
   const months = [...new Set(d.tx.map((t) => t.date.slice(0, 7)))].sort();
   const full = months.slice(0, -1).slice(-3);                    // три последних полных месяца
+  const inFull = d.tx.filter((t) => full.includes(t.date.slice(0, 7)));
   const spend = {};
-  d.tx.filter((t) => full.includes(t.date.slice(0, 7))).forEach((t) => { spend[t.cb_category] = (spend[t.cb_category] || 0) + +t.amount; });
+  inFull.forEach((t) => { spend[t.cb_category] = (spend[t.cb_category] || 0) + +t.amount; });
   Object.keys(spend).forEach((k) => (spend[k] /= full.length || 1));
-  const rules = d.rules.filter((r) => r.month === S.month);
-  const pctOf = (c, cat) => { const r = rules.find((x) => x.card_id === c.id && x.category === cat && x.kind !== "partner"); return r ? +r.pct : +c.base_pct; };
-  const rows = Object.entries(spend).filter(([k]) => !SKIP_CATS.has(k)).map(([cat, sum]) => {
-    const per = cards.map((c) => ({ c, pct: pctOf(c, cat), boosted: rules.some((x) => x.card_id === c.id && x.category === cat && x.kind !== "partner") }));
+  // получатели в выгрузке есть только с августа 2026 — партнёрские траты считаем по этим месяцам
+  const pm = full.filter((m) => d.tx.some((t) => t.date.slice(0, 7) === m && t.payee));
+  const rules = d.rules.filter((r) => r.month === S.month || r.month === "*");
+  const partnerSpend = (name) => {
+    const rx = PARTNER_RX[name];
+    if (rx) return pm.length ? d.tx.filter((t) => pm.includes(t.date.slice(0, 7)) && t.payee && rx.test(t.payee)).reduce((a, t) => a + +t.amount, 0) / pm.length : null;
+    return spend[name] != null ? spend[name] : null;
+  };
+  const partners = [...new Set(rules.filter((r) => r.kind === "partner").map((r) => r.category))];
+  const partnerInSuper = partners.filter((n) => PARTNER_RX[n]).reduce((a, n) => a + (partnerSpend(n) || 0), 0);
+  const cats = [...new Set([...Object.keys(spend).filter((k) => !SKIP_CATS.has(k)), ...rules.filter((r) => r.kind !== "partner").map((r) => r.category)])];
+  const mk = (cat, sum, partner) => {
+    const per = cards.map((c) => {
+      const r = rules.find((x) => x.card_id === c.id && x.category === cat && (partner ? x.kind === "partner" : x.kind !== "partner"));
+      return { c, pct: r ? +r.pct : +c.base_pct, boosted: !!r };
+    });
     const best = per.reduce((a, b) => (b.pct > a.pct ? b : a));
-    const tied = per.filter((p) => p.pct === best.pct);
-    return { cat, sum, per, best, tied, gain: sum * best.pct / 100 };
-  }).sort((a, b) => b.gain - a.gain);
-  const partners = rules.filter((r) => r.kind === "partner");
+    return { cat, partner, sum, per, best, gain: sum ? sum * best.pct / 100 : 0 };
+  };
+  const rows = cats.map((cat) => mk(cat, cat === "Супермаркеты" ? Math.max((spend[cat] || 0) - partnerInSuper, 0) : spend[cat] || 0, false))
+    .concat(partners.map((n) => mk(n, partnerSpend(n), true)))
+    .sort((a, b) => b.gain - a.gain || (b.sum || 0) - (a.sum || 0));
   return { months, full, rows, partners, rules, spend };
 }
 
 function render() {
   const d = S.d, c = calc();
   const monthsWithRules = [...new Set(d.rules.map((r) => r.month))].sort().reverse();
-  const total = c.rows.reduce((a, r) => a + r.gain, 0), spendSum = c.rows.reduce((a, r) => a + r.sum, 0);
-  const cmax = Math.max(...c.rows.map((r) => r.sum), 1);
+  const total = c.rows.reduce((a, r) => a + r.gain, 0), spendSum = c.rows.reduce((a, r) => a + (r.sum || 0), 0);
+  const cmax = Math.max(...c.rows.map((r) => r.sum || 0), 1);
   $("hSub").textContent = "Данные по тратам до " + d.tx.reduce((m, t) => (t.date > m ? t.date : m), "").slice(0, 7).split("-").reverse().join(".");
   const cardHead = d.cards.map((x) => `<th class="n">${esc(x.title.replace("Т-Банк · ", "Т · ").replace("Яндекс · ", "Я · "))}</th>`).join("");
-  const table = c.rows.map((r) => `<tr><td><b>${esc(r.cat)}</b><div class="t-text-s t-muted">${rub(r.sum)}/мес</div></td>
+  const table = c.rows.map((r) => `<tr><td><b>${esc(r.cat)}</b>${r.partner ? ' <span class="tag tag--gray">партнёр</span>' : ""}<div class="t-text-s t-muted">${r.sum ? rub(r.sum) + "/мес" : "трат не видно"}</div></td>
     ${r.per.map((p) => `<td class="n"><span class="pct ${p.pct === r.best.pct ? "" : "low"}">${p.pct}%</span>${p.boosted ? "<sup title='повышенный в этом месяце'>★</sup>" : ""}</td>`).join("")}
     <td class="n"><b>${rub(r.gain)}</b></td></tr>`).join("");
   $("main").innerHTML = `
@@ -94,16 +109,17 @@ function render() {
       <div class="kpi"><div class="kpi__lab">трат, которые дают кэшбэк</div><div class="kpi__val">${rub(spendSum)}</div></div>
       <div class="kpi"><div class="kpi__lab">в среднем, %</div><div class="kpi__val">${spendSum ? (total / spendSum * 100).toFixed(1).replace(".", ",") : 0}%</div></div></div>
     <div style="overflow:auto"><table class="tbl"><thead><tr><th>Категория (траты в среднем за ${c.full.length} мес)</th>${cardHead}<th class="n">Кэшбэк/мес</th></tr></thead><tbody>${table}</tbody></table></div>
-    <p class="t-text-s t-muted">Зелёная плашка — лучшая карта в категории, ★ — повышенный процент этого месяца, серый — базовый. Считаем по средним тратам трёх последних полных месяцев, без аренды, детских расходов, переводов и ипотеки. Лимиты бонусов не учтены: у Яндекса до 10 000 баллов в месяц.</p>
-    ${c.partners.length ? `<div class="chips" style="margin-top:8px">${c.partners.map((r) => { const cd = d.cards.find((x) => x.id === r.card_id); return `<span class="tag">${esc(r.category)} · ${r.pct}% · ${esc(cd.title)}</span>`; }).join("")}</div>` : ""}
+    <p class="t-text-s t-muted">Зелёная плашка — лучшая карта в категории, ★ — повышенный процент этого месяца, серый — базовый. Считаем по средним тратам трёх последних полных месяцев, без аренды, детских расходов, переводов и ипотеки. Партнёрские строки (Перекрёсток, Пятёрочка) считаются по августу–сентябрю: раньше в выгрузке нет названий магазинов; «Супермаркеты» — без них. Лимиты бонусов не учтены: у Яндекса до 10 000 баллов в месяц.</p>
+    
   </section>
   <section class="card"><h2>Карты и категории ${monthName(S.month)}</h2><div class="cards">${d.cards.map((x) => {
     const rs = c.rules.filter((r) => r.card_id === x.id).sort((a, b) => b.pct - a.pct);
+    const own = rs.length ? "" : "";
     return `<div class="cardrow"><b>${esc(x.title)} <span class="t-text-s t-muted">· база ${x.base_pct}%</span></b>
       <div class="chips">${rs.length ? rs.map((r) => `<span class="tag">${r.pct}% ${esc(r.category)}${r.kind === "partner" ? " (партнёр)" : ""}</span>`).join("") : `<span class="t-text-s t-muted">Скриншота за этот месяц пока нет</span>`}</div>
       ${x.limit_note ? `<div class="t-text-s t-muted" style="margin-top:6px">Лимит: ${esc(x.limit_note)}</div>` : ""}</div>`;
   }).join("")}</div></section>
-  <section class="card"><h2>На что уходят деньги <small class="t-text-s t-muted">в среднем за месяц</small></h2>${c.rows.slice(0, 12).map((r) => `<div class="bar"><span>${esc(r.cat)}</span><i style="width:${r.sum / cmax * 100}%"></i><em>${rub(r.sum)}</em></div>`).join("")}</section>
+  <section class="card"><h2>На что уходят деньги <small class="t-text-s t-muted">в среднем за месяц</small></h2>${c.rows.filter((r) => r.sum).slice(0, 12).map((r) => `<div class="bar"><span>${esc(r.cat)}</span><i style="width:${r.sum / cmax * 100}%"></i><em>${rub(r.sum)}</em></div>`).join("")}</section>
   <section class="card wide chat"><h2>Спросить помощника</h2>
     <div class="hint">${["Какой картой платить в аптеке?", "Где я теряю больше всего кэшбэка?", "Сколько я потратил на кафе за последние 3 месяца?", "Какую карту взять для продуктов?"].map((q) => `<button type="button" data-q="${esc(q)}">${esc(q)}</button>`).join("")}</div>
     <div class="msgs" id="msgs" aria-live="polite">${S.hist.map((m) => `<div class="m ${m.role === "user" ? "u" : "a"}">${esc(m.content)}</div>`).join("")}</div>
