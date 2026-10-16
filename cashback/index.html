@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="robots" content="noindex"><meta name="color-scheme" content="light dark">
+<title>Кэшбэк</title>
+<link rel="stylesheet" href="../токены.css">
+<style>
+main{max-width:var(--content-wide);margin:0 auto;padding:var(--sp-4) max(16px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));display:grid;gap:var(--sp-4)}
+@media(min-width:900px){main{grid-template-columns:3fr 2fr;align-items:start}.wide{grid-column:1/-1}}
+.card h2{font:600 16px/22px var(--font);display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 var(--sp-3)}
+.back{color:inherit;text-decoration:none}
+.tbl{width:100%;border-collapse:collapse;font:400 14px/20px var(--font)}
+.tbl th{font-weight:500;color:var(--text-secondary);text-align:left;padding:6px 8px;border-bottom:1px solid var(--surface-3)}
+.tbl td{padding:8px;border-bottom:1px solid var(--surface-2);vertical-align:top}
+.tbl td.n,.tbl th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.best{display:inline-flex;gap:6px;align-items:center;font-weight:600}
+.pct{display:inline-block;min-width:44px;text-align:center;padding:2px 8px;border-radius:var(--r-pill);background:var(--accent-soft);font-weight:600}
+.pct.low{background:var(--surface-2);font-weight:400;color:var(--text-secondary)}
+.cards{display:grid;gap:var(--sp-2)}
+.cardrow{padding:var(--sp-3);background:var(--surface-1);border-radius:var(--r-xl)}
+.cardrow b{display:block;margin-bottom:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.sel{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bar{display:grid;grid-template-columns:minmax(110px,1.1fr) 2fr auto;gap:var(--sp-2);align-items:center;padding:3px 0;font:400 14px/20px var(--font)}
+.bar i{display:block;height:10px;border-radius:5px;background:var(--accent);min-width:2px}
+.bar em{font-style:normal;color:var(--text-secondary);font-variant-numeric:tabular-nums;text-align:right}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--sp-3);margin-bottom:var(--sp-3)}
+.chat{display:grid;gap:var(--sp-2)}
+.msgs{display:grid;gap:var(--sp-2);max-height:420px;overflow:auto}
+.m{padding:var(--sp-2) var(--sp-3);border-radius:var(--r-l);white-space:pre-wrap;font:400 14px/20px var(--font)}
+.m.u{background:var(--accent-soft);justify-self:end;max-width:90%}
+.m.a{background:var(--surface-1);max-width:95%}
+.ask{display:flex;gap:var(--sp-2)}.ask .input{flex:1}
+.hint{display:flex;gap:6px;flex-wrap:wrap}
+.hint button{height:32px;padding:0 12px;border-radius:var(--r-pill);border:0;background:var(--surface-1);color:var(--text-primary);cursor:pointer;font:400 13px/18px var(--font)}
+.btn.sm{height:32px;padding:0 12px;font-size:13px}
+[hidden]{display:none!important}
+.err{color:var(--text-negative)}
+</style></head>
+<body>
+<header class="app-header"><a class="back" href="../">← Семья</a><span class="app-title">Кэшбэк</span><span class="t-text-s t-muted" id="hSub"></span></header>
+<main id="main"><div class="card wide">Загружаю…</div></main>
+<script>
+const SB_URL = "https://cuhplpukqhdfutcymtmv.supabase.co", SB_KEY = "sb_publishable_ILfqT6mCyHBOu6BVVRxHKQ_0bPQtNi3";
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+const KEY = lsGet("dash_key");
+const rub = (n) => Math.round(n).toLocaleString("ru-RU").replace(/ /g, " ") + " ₽";
+const MONTHS = ["январь","февраль","март","апрель","май","июнь","июль","август","сентябрь","октябрь","ноябрь","декабрь"];
+const monthName = (m) => MONTHS[+m.slice(5) - 1] + " " + m.slice(0, 4);
+// категории, где процент считается по обычным расходам; остальные расходы не дают повышенного кэшбэка
+const SKIP_CATS = new Set(["Не кэшбэк", "Авто", "Дети", "ЖКУ и дом", "Прочее", "Образование", "Здоровье"]);
+const S = { d: null, month: null, hist: [], busy: false };
+
+async function api(action, payload) {
+  const r = await fetch(`${SB_URL}/functions/v1/cashback`, { method: "POST", headers: { "Content-Type": "application/json", apikey: SB_KEY, "x-mk-key": KEY || "" }, body: JSON.stringify({ action, ...(payload || {}) }) });
+  let j = {}; try { j = await r.json(); } catch {}
+  if (r.status === 403 || j.code === "forbidden") throw Object.assign(new Error("forbidden"), { forbidden: true });
+  if (j.status !== "ok") throw new Error(j.code || "error");
+  return j;
+}
+
+function calc() {
+  const d = S.d, cards = d.cards;
+  const months = [...new Set(d.tx.map((t) => t.date.slice(0, 7)))].sort();
+  const full = months.slice(0, -1).slice(-3);                    // три последних полных месяца
+  const spend = {};
+  d.tx.filter((t) => full.includes(t.date.slice(0, 7))).forEach((t) => { spend[t.cb_category] = (spend[t.cb_category] || 0) + +t.amount; });
+  Object.keys(spend).forEach((k) => (spend[k] /= full.length || 1));
+  const rules = d.rules.filter((r) => r.month === S.month);
+  const pctOf = (c, cat) => { const r = rules.find((x) => x.card_id === c.id && x.category === cat && x.kind !== "partner"); return r ? +r.pct : +c.base_pct; };
+  const rows = Object.entries(spend).filter(([k]) => !SKIP_CATS.has(k)).map(([cat, sum]) => {
+    const per = cards.map((c) => ({ c, pct: pctOf(c, cat), boosted: rules.some((x) => x.card_id === c.id && x.category === cat && x.kind !== "partner") }));
+    const best = per.reduce((a, b) => (b.pct > a.pct ? b : a));
+    const tied = per.filter((p) => p.pct === best.pct);
+    return { cat, sum, per, best, tied, gain: sum * best.pct / 100 };
+  }).sort((a, b) => b.gain - a.gain);
+  const partners = rules.filter((r) => r.kind === "partner");
+  return { months, full, rows, partners, rules, spend };
+}
+
+function render() {
+  const d = S.d, c = calc();
+  const monthsWithRules = [...new Set(d.rules.map((r) => r.month))].sort().reverse();
+  const total = c.rows.reduce((a, r) => a + r.gain, 0), spendSum = c.rows.reduce((a, r) => a + r.sum, 0);
+  const cmax = Math.max(...c.rows.map((r) => r.sum), 1);
+  $("hSub").textContent = "Данные по тратам до " + d.tx.reduce((m, t) => (t.date > m ? t.date : m), "").slice(0, 7).split("-").reverse().join(".");
+  const cardHead = d.cards.map((x) => `<th class="n">${esc(x.title.replace("Т-Банк · ", "Т · ").replace("Яндекс · ", "Я · "))}</th>`).join("");
+  const table = c.rows.map((r) => `<tr><td><b>${esc(r.cat)}</b><div class="t-text-s t-muted">${rub(r.sum)}/мес</div></td>
+    ${r.per.map((p) => `<td class="n"><span class="pct ${p.pct === r.best.pct ? "" : "low"}">${p.pct}%</span>${p.boosted ? "<sup title='повышенный в этом месяце'>★</sup>" : ""}</td>`).join("")}
+    <td class="n"><b>${rub(r.gain)}</b></td></tr>`).join("");
+  $("main").innerHTML = `
+  <section class="card wide"><h2>Какой картой платить <span class="sel"><label class="t-text-s t-muted" for="mSel">Месяц</label><select class="select" id="mSel">${monthsWithRules.map((m) => `<option value="${m}" ${m === S.month ? "selected" : ""}>${monthName(m)}</option>`).join("")}</select></span></h2>
+    <div class="kpis"><div class="kpi"><div class="kpi__lab">кэшбэк в месяц при лучших картах</div><div class="kpi__val">${rub(total)}</div></div>
+      <div class="kpi"><div class="kpi__lab">трат, которые дают кэшбэк</div><div class="kpi__val">${rub(spendSum)}</div></div>
+      <div class="kpi"><div class="kpi__lab">в среднем, %</div><div class="kpi__val">${spendSum ? (total / spendSum * 100).toFixed(1).replace(".", ",") : 0}%</div></div></div>
+    <div style="overflow:auto"><table class="tbl"><thead><tr><th>Категория (траты в среднем за ${c.full.length} мес)</th>${cardHead}<th class="n">Кэшбэк/мес</th></tr></thead><tbody>${table}</tbody></table></div>
+    <p class="t-text-s t-muted">Зелёная плашка — лучшая карта в категории, ★ — повышенный процент этого месяца, серый — базовый. Считаем по средним тратам трёх последних полных месяцев, без аренды, детских расходов, переводов и ипотеки. Лимиты бонусов не учтены: у Яндекса до 10 000 баллов в месяц.</p>
+    ${c.partners.length ? `<div class="chips" style="margin-top:8px">${c.partners.map((r) => { const cd = d.cards.find((x) => x.id === r.card_id); return `<span class="tag">${esc(r.category)} · ${r.pct}% · ${esc(cd.title)}</span>`; }).join("")}</div>` : ""}
+  </section>
+  <section class="card"><h2>Карты и категории ${monthName(S.month)}</h2><div class="cards">${d.cards.map((x) => {
+    const rs = c.rules.filter((r) => r.card_id === x.id).sort((a, b) => b.pct - a.pct);
+    return `<div class="cardrow"><b>${esc(x.title)} <span class="t-text-s t-muted">· база ${x.base_pct}%</span></b>
+      <div class="chips">${rs.length ? rs.map((r) => `<span class="tag">${r.pct}% ${esc(r.category)}${r.kind === "partner" ? " (партнёр)" : ""}</span>`).join("") : `<span class="t-text-s t-muted">Скриншота за этот месяц пока нет</span>`}</div>
+      ${x.limit_note ? `<div class="t-text-s t-muted" style="margin-top:6px">Лимит: ${esc(x.limit_note)}</div>` : ""}</div>`;
+  }).join("")}</div></section>
+  <section class="card"><h2>На что уходят деньги <small class="t-text-s t-muted">в среднем за месяц</small></h2>${c.rows.slice(0, 12).map((r) => `<div class="bar"><span>${esc(r.cat)}</span><i style="width:${r.sum / cmax * 100}%"></i><em>${rub(r.sum)}</em></div>`).join("")}</section>
+  <section class="card wide chat"><h2>Спросить помощника</h2>
+    <div class="hint">${["Какой картой платить в аптеке?", "Где я теряю больше всего кэшбэка?", "Сколько я потратил на кафе за последние 3 месяца?", "Какую карту взять для продуктов?"].map((q) => `<button type="button" data-q="${esc(q)}">${esc(q)}</button>`).join("")}</div>
+    <div class="msgs" id="msgs" aria-live="polite">${S.hist.map((m) => `<div class="m ${m.role === "user" ? "u" : "a"}">${esc(m.content)}</div>`).join("")}</div>
+    <form class="ask" id="askF"><input class="input" id="askQ" placeholder="Например: какой картой платить за такси?" autocomplete="off" maxlength="800"><button class="btn btn-primary" ${S.busy ? "disabled" : ""}>${S.busy ? "Думаю…" : "Спросить"}</button></form>
+    <div class="t-text-s t-muted">Помощник видит ваши карты, правила месяца, траты по категориям и получателям${S.d.receipts.count ? ` и ${S.d.receipts.count} чеков` : ""}. Чеки «Глобус» не учитываются.</div>
+  </section>`;
+  $("mSel").onchange = (e) => { S.month = e.target.value; render(); };
+  document.querySelectorAll("[data-q]").forEach((b) => (b.onclick = () => ask(b.dataset.q)));
+  $("askF").onsubmit = (e) => { e.preventDefault(); const q = $("askQ").value.trim(); if (q) ask(q); };
+  const ms = $("msgs"); ms.scrollTop = ms.scrollHeight;
+}
+
+async function ask(q) {
+  if (S.busy) return;
+  S.hist.push({ role: "user", content: q }); S.busy = true; render();
+  try { const j = await api("ask", { question: q, history: S.hist.slice(0, -1) }); S.hist.push({ role: "assistant", content: j.answer || "Ответа нет" }); }
+  catch (e) { S.hist.push({ role: "assistant", content: e.message === "forbidden" ? "Код доступа не подошёл." : "Помощник не ответил. Попробуйте ещё раз через минуту." }); }
+  S.busy = false; render();
+}
+
+(async () => {
+  if (!KEY) { $("main").innerHTML = `<div class="card wide">Откройте дашборд по ссылке с кодом, потом вернитесь сюда. <a href="../">На главную</a></div>`; return; }
+  try {
+    S.d = await api("data");
+    const ms = [...new Set(S.d.rules.map((r) => r.month))].sort();
+    S.month = ms[ms.length - 1];
+    render();
+  } catch (e) {
+    $("main").innerHTML = `<div class="card wide">${e.forbidden ? "Код доступа не подошёл — откройте дашборд по ссылке с кодом." : "Данные не загрузились."} <button class="btn btn-secondary sm" onclick="location.reload()">Повторить</button></div>`;
+  }
+})();
+</script>
+</body></html>

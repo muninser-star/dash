@@ -36,6 +36,13 @@
     "ic": "search"
   },
   {
+    "title": "Кэшбэк",
+    "caption": "Какой картой платить",
+    "url": "cashback/",
+    "icon": "💰",
+    "ic": "wallet"
+  },
+  {
     "title": "Polza",
     "caption": "Баланс · пополнить",
     "url": "https://polza.ai/dashboard",
