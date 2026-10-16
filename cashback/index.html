@@ -33,14 +33,13 @@ main{max-width:var(--content-wide);margin:0 auto;padding:var(--sp-4) max(16px,en
 .hint button{height:32px;padding:0 12px;border-radius:var(--r-pill);border:0;background:var(--surface-1);color:var(--text-primary);cursor:pointer;font:400 13px/18px var(--font)}
 .btn.sm{height:32px;padding:0 12px;font-size:13px}
 [hidden]{display:none!important}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:var(--sp-2)}
-.tile{padding:var(--sp-3);background:var(--surface-1);border-radius:var(--r-xl);display:grid;gap:6px;align-content:start}
-.tile .cat{font:500 14px/18px var(--font);color:var(--text-secondary)}
-.tile .win{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
-.tile .win b{font:700 18px/22px var(--font)}
-.tile .win .p{font:700 28px/30px var(--font);font-variant-numeric:tabular-nums}
-.tile .alt{font:400 13px/18px var(--font);color:var(--text-secondary)}
-.tile.zero .p{color:var(--text-secondary);font-weight:500}
+.list{display:grid;grid-template-columns:1fr;gap:0 var(--sp-5)}
+@media(min-width:900px){.list{grid-template-columns:1fr 1fr}}
+.lr{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 56px;gap:10px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--surface-3)}
+.lc{font:700 18px/22px var(--font)}.lc small{font:400 12px/14px var(--font);color:var(--text-secondary);margin-left:4px}
+.lw{font:500 14px/18px var(--font)}.lw .cn{white-space:nowrap}
+.lp{font:700 18px/22px var(--font);text-align:right;font-variant-numeric:tabular-nums}
+.lr.zero .lw{color:var(--text-secondary);font-weight:400}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:baseline}
 @media(max-width:600px){.cardgrid{grid-template-columns:1fr}}
 .cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--sp-3)}
@@ -138,12 +137,9 @@ function cardsBlock(c) {
 function tiles(c) {
   return c.rows.map((r) => {
     const sorted = r.per.slice().sort((a, b) => b.pct - a.pct);
-    const top = sorted.filter((p) => p.pct === sorted[0].pct), next = sorted.find((p) => p.pct < sorted[0].pct && p.pct > 0);
-    const zero = sorted[0].pct === 0;
-    const name = (p) => `<span class="dot" style="background:${CARD_COLORS[p.c.id] || "var(--accent)"}"></span>${esc(shortName(p.c.title))}`;
-    return `<div class="tile ${zero ? "zero" : ""}"><div class="cat">${esc(r.cat)}${r.partner ? " · партнёр" : ""}</div>
-      <div class="win"><b>${zero ? "любой, кэшбэка нет" : top.map(name).join("<br>")}</b>${zero ? "" : `<span class="p">${sorted[0].pct}%</span>`}</div>
-      ${next ? `<div class="alt">запасная: ${name(next)} ${next.pct}%</div>` : ""}</div>`;
+    const top = sorted.filter((p) => p.pct === sorted[0].pct), zero = sorted[0].pct === 0;
+    const names = top.map((p) => `<span class="cn" style="color:${CARD_COLORS[p.c.id] || "inherit"}">${esc(shortName(p.c.title))}</span>`).join(" · ");
+    return `<div class="lr ${zero ? "zero" : ""}"><span class="lc">${esc(r.cat)}${r.partner ? " <small>магазин</small>" : ""}</span><span class="lw">${zero ? "нет кэшбэка" : names}</span><span class="lp">${zero ? "" : sorted[0].pct + "%"}</span></div>`;
   }).join("");
 }
 function render() {
@@ -159,7 +155,7 @@ function render() {
   $("main").innerHTML = `
   <section class="card wide"><h2>Что даёт каждая карта <span class="t-muted t-text-s" style="font-weight:400">${monthName(S.month)}</span><span class="sel"><label class="t-text-s t-muted" for="mSel">Месяц</label><select class="select" id="mSel">${monthsWithRules.map((m) => `<option value="${m}" ${m === S.month ? "selected" : ""}>${monthName(m)}</option>`).join("")}</select></span></h2><div class="cardgrid">${cardsBlock(c)}</div></section>
   <section class="card wide"><h2>Чем платить сейчас — ${monthName(S.month)} </h2>
-    <div class="grid">${tiles(c)}</div>
+    <div class="list">${tiles(c)}</div>
     <details class="more" style="margin-top:var(--sp-4)"><summary>Таблица по всем картам и сколько это даёт в месяц</summary>
     <div class="kpis" style="margin-top:var(--sp-3)"><div class="kpi"><div class="kpi__lab">кэшбэк в месяц при лучших картах</div><div class="kpi__val">${rub(total)}</div></div>
       <div class="kpi"><div class="kpi__lab">трат, которые дают кэшбэк</div><div class="kpi__val">${rub(spendSum)}</div></div>
