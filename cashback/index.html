@@ -39,6 +39,7 @@ main{max-width:var(--content-wide);margin:0 auto;padding:var(--sp-4) max(16px,en
 .lc{font:700 18px/22px var(--font)}.lc small{font:400 12px/14px var(--font);color:var(--text-secondary);margin-left:4px}
 .lw{font:500 14px/18px var(--font)}.lw .cn{white-space:nowrap}
 .lp{font:700 18px/22px var(--font);text-align:right;font-variant-numeric:tabular-nums}
+.ico{display:inline-block;width:1.5em;text-align:center;margin-right:6px;font-weight:400}
 .lr.zero .lw{color:var(--text-secondary);font-weight:400}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:baseline}
 @media(max-width:600px){.cardgrid{grid-template-columns:1fr}}
@@ -83,6 +84,8 @@ async function api(action, payload) {
   return j;
 }
 
+const ICONS = { "Супермаркеты": "🛒", "Кафе и рестораны": "🍽️", "Аптеки": "💊", "Красота": "💅", "Городской транспорт": "🚇", "Такси": "🚕", "Каршеринг": "🚗", "Развлечения": "🎭", "Подарки и творчество": "🎁", "Книги и канцтовары": "📚", "Спорттовары": "👟", "Тренировки": "🏋️", "Цифровые товары": "🎮", "Одежда": "👕", "Маркетплейсы": "📦", "Связь": "📱", "Страхование": "🛡️", "Здоровье": "🩺", "Образование": "🎓", "Яндекс Лавка": "🛵", "Перекрёсток": "🛒", "Пятёрочка": "🛒", "Перекрёсток доставка": "🛵", "Дети": "🧸", "ЖКУ и дом": "🏠", "Авто": "🚘", "Прочее": "▫️" };
+const ic = (cat) => `<span class="ico" aria-hidden="true">${ICONS[cat] || "▫️"}</span>`;
 const PARTNER_RX = { "Перекрёсток": /perekr|перекр/i, "Пятёрочка": /pyater|пятер/i };
 function calc() {
   const d = S.d, cards = d.cards;
@@ -129,8 +132,8 @@ function cardsBlock(c) {
     const total = rs.reduce((a, r) => a + exp(r), 0);
     return `<div class="cc" style="border-top:4px solid ${col}"><div class="cc__h"><b>${esc(x.title)}</b>${total ? `<span class="t-text-s t-muted">≈ ${rub(total)}/мес</span>` : ""}</div>
       <div class="cc__r hd"><span>Категория</span><span>Кэшбэк</span><span>Ожидаемо/мес</span></div>
-      ${rs.length ? rs.map((r) => { const e = exp(r); return `<div class="cc__r"><span class="cat">${esc(r.category)}${r.kind === "partner" ? ' <small>партнёр</small>' : ""}</span><span class="pct">${r.pct}%</span><span class="ex">${e ? rub(e) : "—"}</span></div>`; }).join("") : `<div class="t-text-s t-muted" style="margin:8px 0">Повышенных категорий в этом месяце нет или скриншот ещё не прислан</div>`}
-      <div class="cc__r base"><span class="cat">всё остальное</span><span class="pct low">${x.base_pct}%</span><span class="ex"></span></div>
+      ${rs.length ? rs.map((r) => { const e = exp(r); return `<div class="cc__r"><span class="cat">${ic(r.category)}${esc(r.category)}${r.kind === "partner" ? ' <small>партнёр</small>' : ""}</span><span class="pct">${r.pct}%</span><span class="ex">${e ? rub(e) : "—"}</span></div>`; }).join("") : `<div class="t-text-s t-muted" style="margin:8px 0">Повышенных категорий в этом месяце нет или скриншот ещё не прислан</div>`}
+      <div class="cc__r base"><span class="cat">${ic("")}всё остальное</span><span class="pct low">${x.base_pct}%</span><span class="ex"></span></div>
       ${x.limit_note ? `<div class="t-text-s t-muted" style="margin-top:6px">Лимит: ${esc(x.limit_note)}</div>` : ""}</div>`;
   }).join("");
 }
@@ -139,7 +142,7 @@ function tiles(c) {
     const sorted = r.per.slice().sort((a, b) => b.pct - a.pct);
     const top = sorted.filter((p) => p.pct === sorted[0].pct), zero = sorted[0].pct === 0;
     const names = top.map((p) => `<span class="cn" style="color:${CARD_COLORS[p.c.id] || "inherit"}">${esc(shortName(p.c.title))}</span>`).join(" · ");
-    return `<div class="lr ${zero ? "zero" : ""}"><span class="lc">${esc(r.cat)}${r.partner ? " <small>магазин</small>" : ""}</span><span class="lw">${zero ? "нет кэшбэка" : names}</span><span class="lp">${zero ? "" : sorted[0].pct + "%"}</span></div>`;
+    return `<div class="lr ${zero ? "zero" : ""}"><span class="lc">${ic(r.cat)}${esc(r.cat)}${r.partner ? " <small>магазин</small>" : ""}</span><span class="lw">${zero ? "нет кэшбэка" : names}</span><span class="lp">${zero ? "" : sorted[0].pct + "%"}</span></div>`;
   }).join("");
 }
 function render() {
@@ -149,7 +152,7 @@ function render() {
   const cmax = Math.max(...c.rows.map((r) => r.sum || 0), 1);
   $("hSub").textContent = "Данные по тратам до " + d.tx.reduce((m, t) => (t.date > m ? t.date : m), "").slice(0, 7).split("-").reverse().join(".");
   const cardHead = d.cards.map((x) => `<th class="n">${esc(x.title.replace("Т-Банк · ", "Т · ").replace("Яндекс · ", "Я · "))}</th>`).join("");
-  const table = c.rows.map((r) => `<tr><td><b>${esc(r.cat)}</b>${r.partner ? ' <span class="tag tag--gray">партнёр</span>' : ""}<div class="t-text-s t-muted">${r.sum ? rub(r.sum) + "/мес" : "трат не видно"}</div></td>
+  const table = c.rows.map((r) => `<tr><td><b>${ic(r.cat)}${esc(r.cat)}</b>${r.partner ? ' <span class="tag tag--gray">партнёр</span>' : ""}<div class="t-text-s t-muted">${r.sum ? rub(r.sum) + "/мес" : "трат не видно"}</div></td>
     ${r.per.map((p) => `<td class="n"><span class="pct ${p.pct === r.best.pct ? "" : "low"}">${p.pct}%</span>${p.boosted ? "<sup title='повышенный в этом месяце'>★</sup>" : ""}</td>`).join("")}
     <td class="n"><b>${rub(r.gain)}</b></td></tr>`).join("");
   $("main").innerHTML = `
