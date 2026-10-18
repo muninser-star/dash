@@ -36,6 +36,13 @@
     "ic": "search"
   },
   {
+    "title": "Игры",
+    "caption": "Мини-игры с уровнями для детей",
+    "url": "igry/",
+    "icon": "🎮",
+    "ic": "star"
+  },
+  {
     "title": "Кэшбэк",
     "caption": "Какой картой платить",
     "url": "cashback/",

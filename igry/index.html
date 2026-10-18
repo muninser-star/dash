@@ -1,0 +1,19 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
+<title>Игры для ребёнка</title><link rel="stylesheet" href="../токены.css">
+<style>main{max-width:680px;margin:0 auto;padding:var(--sp-4)}</style></head>
+<body><header class="app-header"><a class="back" href="../">← Семья</a><span class="app-title">Игры</span></header>
+<main><link rel="stylesheet" href="engine.css"><div class="fvg"><div class="fvg-intro">🎮 Мини-игры для детей. В каждой — уровни: проходишь один, открывается следующий, и они становятся всё сложнее. Звёзды и прогресс сохраняются в этом браузере.</div>
+<div class="fvg-cat"><a class="fvg-card" href="kodik/" data-slug="kodik" data-count="12"><span class="e">🤖</span><h2>Кодик: путь робота</h2><p>Составь программу из команд — вперёд, налево, направо, прыжок, повтор — и проведи робота к флажку. Камни, река, ключи и звёзды.</p>
+<div class="prog"><i></i></div><div class="meta"><span>6–9 лет</span><span>Алгоритмы</span><span>12 уровней</span><span class="st"></span></div></a>
+<a class="fvg-card" href="puzzle/" data-slug="puzzle" data-count="8"><span class="e">🧩</span><h2>Пазл-приключение</h2><p>Картинка по теме поездки — космос, Нижний Новгород, динозавры, море. Собери из кусочков: от 4 до 30 деталей.</p>
+<div class="prog"><i></i></div><div class="meta"><span>4–9 лет</span><span>Внимание</span><span>8 уровней</span><span class="st"></span></div></a>
+<a class="fvg-card" href="memory-map/" data-slug="memory-map" data-count="10"><span class="e">🗺️</span><h2>Запомни и расставь</h2><p>Несколько секунд смотришь, где что лежит. Потом поле пустеет — верни каждый предмет на своё место.</p>
+<div class="prog"><i></i></div><div class="meta"><span>5–9 лет</span><span>Память</span><span>10 уровней</span><span class="st"></span></div></a>
+<a class="fvg-card" href="pairs/" data-slug="pairs" data-count="8"><span class="e">🃏</span><h2>Найди пару</h2><p>Переворачивай карточки и ищи одинаковые. Начинается с четырёх карточек — подходит самым маленьким.</p>
+<div class="prog"><i></i></div><div class="meta"><span>4+ лет</span><span>Память</span><span>8 уровней</span><span class="st"></span></div></a>
+<a class="fvg-card" href="cipher/" data-slug="cipher" data-count="10"><span class="e">🔐</span><h2>Шифровка</h2><p>Слова спрятаны за значками, а потом за сдвинутыми буквами. Расшифруй их все, как настоящий агент.</p>
+<div class="prog"><i></i></div><div class="meta"><span>6–9 лет</span><span>Логика, чтение</span><span>10 уровней</span><span class="st"></span></div></a>
+<a class="fvg-card" href="pattern/" data-slug="pattern" data-count="10"><span class="e">🔮</span><h2>Что дальше?</h2><p>Найди правило в ряду картинок и чисел и скажи, что будет дальше. От простых узоров до удвоения и квадратов.</p>
+<div class="prog"><i></i></div><div class="meta"><span>5–9 лет</span><span>Закономерности</span><span>10 уровней</span><span class="st"></span></div></a></div></div>
+<script src="engine.js"></script>
+<script>document.querySelectorAll('.fvg-card').forEach(function(c){var s=FVG.summary(c.dataset.slug,+c.dataset.count);c.querySelector('.prog i').style.width=Math.round(s.sum/(s.count*3)*100)+'%';if(s.sum)c.querySelector('.st').textContent='★ '+s.sum+' из '+s.count*3})</script></main></body></html>
