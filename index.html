@@ -134,7 +134,7 @@ async function load() {
   api("dash", "usage").then((j) => { S.usage = j; renderPlates(); }).catch(() => { S.usage = { error: true }; renderPlates(); });
   api("dash", "ycloud").then((j) => { S.ycloud = j; renderPlates(); }).catch(() => { S.ycloud = { error: true }; renderPlates(); });
   api("dash", "finance").then((j) => { S.fin = j; render(); }).catch((e) => { S.fin = { error: e.message }; render(); });
-  api("dash", "films_pick", { mode: S.mode }).then((j) => { S.film = j; S.bet = null; render(); }).catch(() => { S.film = { error: true }; render(); });
+  // Подбор фильмов платный: запускается только явной отправкой формы #recForm.
 }
 
 // ── отрисовка ──
@@ -228,8 +228,8 @@ function filmMeta(f) {
 }
 function filmCard() {
   const FF = S.film;
-  if (!FF) return { full: `<div class="card" id="film"><h2>Фильм на вечер</h2><span class="t-text-s t-muted">Подбираю по вашим оценкам… один раз в день, до минуты</span></div>`, fold: "" };
-  if (FF.error) return { full: `<div class="card" id="film"><h2>Фильм на вечер</h2>Фильм не подобрался · <button class="btn btn-secondary sm" data-act="reload">Повторить</button>${modeBar()}</div>`, fold: "" };
+  if (!FF) return { full: `<div class="card" id="film"><h2>Фильм на вечер</h2><p class="t-text-s t-muted">Автоподбор отключён. Платный запрос в Polza отправляется только по кнопке «Подобрать» в форме.</p><button class="btn btn-primary sm" data-act="film-all">Открыть форму подбора →</button></div>`, fold: "" };
+  if (FF.error) return { full: `<div class="card" id="film"><h2>Фильм на вечер</h2>Фильм не подобрался · <button class="btn btn-secondary sm" data-act="film-all">Открыть форму подбора</button>${modeBar()}</div>`, fold: "" };
   const pk = pickFilm(FF);
   if (!pk) return { full: `<div class="card" id="film"><h2>Фильм на вечер <button class="btn btn-secondary sm" data-act="film-all">Подбор →</button></h2>Подходящего не нашлось. <button class="btn btn-secondary sm" data-act="refresh">Подобрать заново</button>${modeBar()}</div>`, fold: "Фильм: вариантов нет" };
   const f = pk.f;
@@ -261,7 +261,7 @@ function filmSection(title, list, rewatch, blk, empty) {
 function filmForm() {
   const F = S.form2 || { mode: S.mode, moods: [], wish: "", format: "films", count: "10", rewatch: true };
   return `<form class="card" id="recForm"><h2><button type="button" class="btn btn-secondary sm" data-act="film-back">← Назад</button><span>Что посмотрим сегодня?</span></h2>
-    <div class="t-text-s t-muted">Подбор по моим оценкам: нейросеть знает весь список просмотренного и не предлагает виденное.</div>
+    <div class="t-text-s t-muted">Подбор по моим оценкам: нейросеть знает весь список просмотренного и не предлагает виденное. Платный запрос в Polza отправится только после нажатия «Подобрать».</div>
     <div class="day t-text-xs t-muted">Кто смотрит</div><div class="chips">${Object.keys(MODE_LABEL).map((m) => `<label class="chip-i"><input type="radio" name="mode" value="${m}" ${F.mode === m ? "checked" : ""}><span>${MODE_LABEL[m]}</span></label>`).join("")}</div>
     <div class="day t-text-xs t-muted">Настроение и жанр — можно несколько</div><div class="chips">${MOODS.map(([v, l]) => `<label class="chip-i"><input type="checkbox" name="mood" value="${esc(v)}" ${F.moods.includes(v) ? "checked" : ""}><span>${l}</span></label>`).join("")}</div>
     <div class="day t-text-xs t-muted">Чего хочется — своими словами</div>
@@ -274,7 +274,7 @@ function filmForm() {
 function filmResults(D) {
   if (S.recBusy) return `<div class="card" aria-busy="true"><div class="loader"><span class="spin" role="status" aria-label="Подбираю"></span><div><b>Подбираю фильмы… <span id="recSec">${Math.round((Date.now() - S.recT0) / 1000)}</span> с</b><div class="t-text-s t-muted">Нейросеть листает ваш список — обычно 20–60 секунд</div></div></div>${"<div class=\"skel\"></div>".repeat(3)}</div>`;
   if (S.recErr) return `<div class="card err">Не получилось: ${esc(S.recErr)}</div>`;
-  if (!D) return `<div class="card"><span class="t-text-s t-muted">Подбираю ставку на сегодня…</span></div>`;
+  if (!D) return `<div class="card"><span class="t-text-s t-muted">Задайте условия и нажмите «Подобрать». До этого запросы в Polza не отправляются.</span></div>`;
   let h = "";
   if (D.pick && D.pick.title) h += `<div class="card pickbox"><div class="t-text-s t-muted">Ставка на сегодня</div><b>${esc(D.pick.title)}</b><div>${esc(D.pick.reason)}</div></div>`;
   if (D.note) h += `<div class="card sub">${esc(D.note)}</div>`;
@@ -362,8 +362,8 @@ document.addEventListener("click", async (ev) => {
     if (act === "reload") return load();
     if (act === "add") { S.form = true; return render(); }
     if (act === "close") { S.form = false; return render(); }
-    if (act === "mode") { S.mode = b.dataset.m; lsSet("dash_mode", S.mode); S.film = null; S.bet = null; render(); try { S.film = await api("dash", "films_pick", { mode: S.mode }); } catch { S.film = { error: true }; } return render(); }
-    if (act === "refresh") { S.film = null; S.bet = null; render(); try { S.film = await api("dash", "films_refresh", { mode: S.mode }); } catch { S.film = { error: true }; } return render(); }
+    if (act === "mode") { S.mode = b.dataset.m; lsSet("dash_mode", S.mode); S.film = null; S.rec = null; S.bet = null; if (S.form2) S.form2.mode = S.mode; return render(); }
+    if (act === "refresh") { location.hash = "#film"; S.view = "film"; return render(); }
     if (act === "next") { const n = S.film && S.film.new ? S.film.new.length : 0; S.bet = n ? ((S.bet == null ? 0 : S.bet) + 1) % n : null; return render(); }
     if (act === "film-all") { location.hash = "#film"; return; }
     if (act === "film-back") { history.replaceState(null, "", location.pathname + location.search); S.view = null; return render(); }
@@ -400,12 +400,13 @@ document.addEventListener("click", async (ev) => {
 document.addEventListener("submit", async (ev) => {
   const f = ev.target.closest && ev.target.closest("#recForm"); if (!f) return;
   ev.preventDefault();
+  if (S.recBusy) return; // Не допускаем повторного платного запроса во время подбора.
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   const d = new FormData(f);
   S.form2 = { mode: d.get("mode") || "solo", moods: d.getAll("mood"), wish: String(d.get("wish") || "").trim(), format: d.get("format"), count: d.get("count"), rewatch: !!d.get("rewatch") };
   S.mode = S.form2.mode; lsSet("dash_mode", S.mode); S.recBusy = true; S.recErr = null; S.recT0 = Date.now(); render();
   const tick = setInterval(() => { const el = $("recSec"); if (el) el.textContent = Math.round((Date.now() - S.recT0) / 1000); }, 1000);
-  try { S.rec = await api("dash", "films_recommend", S.form2); } catch (e) { S.recErr = e.message === "error" ? "сервер не ответил, попробуйте ещё раз" : e.message; }
+  try { S.rec = await api("dash", "films_recommend", S.form2); S.film = S.rec; S.bet = null; } catch (e) { S.recErr = e.message === "error" ? "сервер не ответил, попробуйте ещё раз" : e.message; }
   clearInterval(tick); S.recBusy = false; render(true);   // результат показываем, даже если пока ждали, нажали что-то в форме
 });
 boot();
