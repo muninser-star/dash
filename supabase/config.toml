@@ -1,0 +1,2 @@
+[functions.groceries]
+verify_jwt = false

@@ -50,6 +50,13 @@
     "ic": "wallet"
   },
   {
+    "title": "Продукты",
+    "caption": "Цены в четырёх магазинах",
+    "url": "groceries/",
+    "icon": "🛒",
+    "ic": "wallet"
+  },
+  {
     "title": "Polza",
     "caption": "Баланс · пополнить",
     "url": "https://polza.ai/dashboard",
