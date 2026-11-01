@@ -26,6 +26,7 @@ function shoppingCategory(g){
  if(/коктейль|чудо/.test(n))return 'Молочные коктейли';
  if(/^молоко/.test(n))return 'Молоко';if(/кефир/.test(n))return 'Кефир';if(/сливки/.test(n))return 'Сливки';
  if(/творог/.test(n))return 'Творог';if(/йогурт|actimel/.test(n))return 'Йогурты';
+ if(/пельмен/.test(n))return 'Пельмени';
  if(/масло/.test(n)&&/олейн|злат|золот|семеч|слобод|альтер/.test(n))return 'Подсолнечное масло';
  if(/масло/.test(n))return 'Сливочное масло';
  if(/колбаса/.test(n))return 'Колбаса';if(/сосиск|молокуш/.test(n))return 'Сосиски';
