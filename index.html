@@ -55,6 +55,10 @@ body{padding-bottom:max(24px,env(safe-area-inset-bottom))}
 @media (prefers-reduced-motion:reduce){.loader .spin,.skel{animation-duration:3s}}
 .watch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,235px),1fr));gap:var(--sp-2)}
 .watch-tile{min-width:0;padding:var(--sp-3);border-radius:var(--r-xl);background:var(--surface-1)}
+.watch-tile{display:grid;grid-template-columns:clamp(56px,24%,82px) minmax(0,1fr);gap:var(--sp-2);align-items:start}
+.watch-tile-body{min-width:0;overflow-wrap:anywhere}
+.watch-poster{position:relative;display:grid;place-items:center;aspect-ratio:2/3;border-radius:var(--r-s);overflow:hidden;background:var(--surface-2);text-align:center}
+.watch-poster img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:var(--surface-2)}
 .watch-tile h3{margin:0 0 var(--sp-2);font:600 16px/22px var(--font)}
 .watch-tags{display:flex;gap:6px;flex-wrap:wrap}
 .watch-desc{margin:var(--sp-2) 0 0;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
@@ -271,6 +275,13 @@ async function loadWatchlist() {
   render();
   void loadWatchDescriptions();
 }
+function watchPosterUrl(f) {
+  const id = f.kinopoisk_url?.match(/^https:\/\/www\.kinopoisk\.ru\/(?:film|series)\/(\d+)\/$/)?.[1];
+  return id ? `https://st.kp.yandex.net/images/film_iphone/iphone360_${id}.jpg` : f.poster_url || "";
+}
+document.addEventListener("error", (event) => {
+  if (event.target instanceof HTMLImageElement && event.target.matches(".watch-poster img")) event.target.remove();
+}, true);
 function watchlistCard() {
   let body = "";
   if (S.watchlistOpen) {
@@ -292,8 +303,9 @@ function watchlistCard() {
       else body += `<div class="watch-grid">${matches.slice(start, start + watchPageSize).map(f => {
         const title = f.kinopoisk_url ? `<a href="${esc(f.kinopoisk_url)}" target="_blank" rel="noopener">${esc(f.title)}</a>` : esc(f.title);
         const tags = [f.year, watchKinds[watchKind(f)], ...watchGenres(f).filter(g => g !== "мультфильм")].filter(Boolean);
-        return `<article class="watch-tile"><h3>${title}</h3><div class="watch-tags">${tags.map(tag => `<span class="badge">${esc(tag)}</span>`).join("")}</div>
-          ${f.description ? `<p class="t-text-s watch-desc">${esc(f.description)}</p>` : '<p class="t-text-s t-muted watch-desc">Описание пока недоступно</p>'}</article>`;
+        const poster = watchPosterUrl(f);
+        return `<article class="watch-tile"><div class="watch-poster" aria-hidden="true"><span class="t-text-xs t-muted">Без постера</span>${poster ? `<img src="${esc(poster)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : ""}</div><div class="watch-tile-body"><h3>${title}</h3><div class="watch-tags">${tags.map(tag => `<span class="badge">${esc(tag)}</span>`).join("")}</div>
+          ${f.description ? `<p class="t-text-s watch-desc">${esc(f.description)}</p>` : '<p class="t-text-s t-muted watch-desc">Описание пока недоступно</p>'}</div></article>`;
       }).join("")}</div>`;
       if (pageCount > 1) body += `<div class="acts watch-pages"><button type="button" class="btn btn-secondary sm" data-act="watchlist-page" data-step="-1" ${start ? "" : "disabled"}>← Назад</button><span class="t-text-s">${watchFilters.page + 1} / ${pageCount}</span><button type="button" class="btn btn-secondary sm" data-act="watchlist-page" data-step="1" ${watchFilters.page + 1 < pageCount ? "" : "disabled"}>Дальше →</button></div>`;
     }
@@ -473,7 +485,7 @@ document.addEventListener("click", async (ev) => {
       if (!f) return;
       b.disabled = true;
       try {
-        await api("dash-watchlist", "films_watchlist_add", { title: f.title, year: f.year, kinopoisk_url: f.wiki, genre: f.genre, kind: f.kind, description: f.description });
+        await api("dash-watchlist", "films_watchlist_add", { title: f.title, year: f.year, kinopoisk_url: f.wiki, genre: f.genre, kind: f.kind, description: f.description, poster_url: f.poster });
         await loadWatchlist();
         toast("Добавлено в «Буду смотреть»");
       } finally { b.disabled = false; }
