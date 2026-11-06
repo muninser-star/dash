@@ -22,6 +22,13 @@ test('pack sizes and spelling punctuation do not split identical products',()=>{
  const gs=C.groups([row('Молоко «Чабан» 3,2% 1 л',{unit:'л'}),row('Молоко Чабан 3.2% 900 мл',{unit:'л',quantity:.9})],{today});
  assert.equal(gs.length,1);
 });
+test('owner-confirmed cottage cheese and chicken aliases merge without losing original labels',()=>{
+ for(const [a,b,title] of [['Творог Село Зелёное 5%','Творог Село Зелёное обезжиренный 0,5%','Творог Село Зелёное'],['Бедро ЦБ Петелинка','Бедро ЦБ Петелино охл','Бедро цыплёнка Петелинка']]){
+  const gs=C.groups([row(a),row(b,{store:'Дикси'})],{today});assert.equal(gs.length,1);assert.equal(gs[0].title,title);assert.deepEqual(gs[0].all.map(o=>o.name),[a,b]);
+ }
+ assert.equal(C.groups([row('Творог Савушкин 5%'),row('Творог Савушкин 0,5%')],{today}).length,2);
+ assert.equal(C.groups([row('Бедро ЦБ Петелинка'),row('Филе бедра ЦБ без кожи Петелинка')],{today}).length,2);
+});
 test('category aliases and product names resolve to common categories',()=>{
  assert.equal(C.category(row('Морковь',{category:'овощи'})),'Овощи');
  assert.equal(C.category(row('Морковь',{category:'Овощи и фрукты'})),'Овощи');
@@ -38,6 +45,13 @@ test('category aliases and product names resolve to common categories',()=>{
 test('latest observation per store is selected after merging aliases',()=>{
  const a=row('Мандарин с листом',{observedOn:'2026-11-01',price:90}),b=row('Мандарин с листочком',{observedOn:'2026-11-06',price:120});
  const [g]=C.groups([b,a],{today});assert.equal(g.byStore['Лента'],b);assert.equal(g.all.length,2);
+});
+test('beef, chicken, turkey and pork have separate categories',()=>{
+ for(const [name,expected] of [['Стейк мясо говядины Мираторг','Говядина'],['Стейк топ-блейд Taurus','Говядина'],['Стейк Primebeef','Говядина'],['Фарш говяжий','Говядина'],['Бедро ЦБ Петелинка','Курица'],['Стейк куриный','Курица'],['Филе грудки индейки','Индейка'],['Стейк свиной','Свинина'],['Фарш из говядины и свинины','Мясные продукты']]){
+  assert.equal(C.category(row(name,{category:'Мясо и птица'})),expected,name);
+ }
+ assert.equal(C.category(row('Фарш говяжий',{shoppingGroup:'Мясо и птица'})),'Говядина');
+ assert.equal(C.groups([row('Стейк куриный'),row('Стейк говяжий')],{today}).length,2);
 });
 test('shopping recommendations compare unit price rather than sticker price',()=>{
  const gs=C.groups([row('Молоко Чабан',{unit:'л',quantity:2,price:180}),row('Молоко Чабан',{unit:'л',store:'Дикси',quantity:1,price:100})],{today});
