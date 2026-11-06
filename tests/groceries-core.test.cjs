@@ -46,6 +46,22 @@ test('latest observation per store is selected after merging aliases',()=>{
  const a=row('Мандарин с листом',{observedOn:'2026-11-01',price:90}),b=row('Мандарин с листочком',{observedOn:'2026-11-06',price:120});
  const [g]=C.groups([b,a],{today});assert.equal(g.byStore['Лента'],b);assert.equal(g.all.length,2);
 });
+test('weighted banana aliases merge while mini bananas stay separate',()=>{
+ const gs=C.groups(['Бананы вес','Бананы на вес','Бананы'].map(k=>row(k)),{today});
+ assert.equal(gs.length,1);assert.equal(gs[0].all.length,3);assert.equal(gs[0].title,'Бананы');
+ assert.equal(C.groups([row('Бананы на вес'),row('Бананы мини')],{today}).length,2);
+});
+test('hygiene and desserts have separate categories regardless of flavor',()=>{
+ for(const name of ['Коломенское десерт тирамису 13%','Коломенское пудинг со вкусом ванильного сиропа 13%','Десерт с манго'])assert.equal(C.category(row(name)),'Десерты',name);
+ for(const name of ['Papia туалетная бумага Strawberry Dream 3 слоя','Шампунь с манго','Мыло молоко и мёд'])assert.equal(C.category(row(name)),'Гигиена',name);
+ assert.equal(C.category(row('Торт-мороженое')),'Мороженое');
+});
+test('panna cotta and fruit-flavored yogurt belong with yogurts rather than fruit',()=>{
+ for(const name of ['Коломенское десерт панна котта 9% с вишней и манго','Панна-котта с клубникой','Йогурт с манго','Actimel'])assert.equal(C.category(row(name,{category:'Фрукты'})),'Йогурты',name);
+ assert.equal(C.category(row('Коломенское десерт панна котта 9% с вишней и манго',{shoppingGroup:'Фрукты'})),'Йогурты');
+ assert.equal(C.category(row('Манго')),'Фрукты');
+ assert.equal(C.category(row('Кефир 3,2%')),'Молочные продукты');
+});
 test('beef, chicken, turkey and pork have separate categories',()=>{
  for(const [name,expected] of [['Стейк мясо говядины Мираторг','Говядина'],['Стейк топ-блейд Taurus','Говядина'],['Стейк Primebeef','Говядина'],['Фарш говяжий','Говядина'],['Бедро ЦБ Петелинка','Курица'],['Стейк куриный','Курица'],['Филе грудки индейки','Индейка'],['Стейк свиной','Свинина'],['Фарш из говядины и свинины','Мясные продукты']]){
   assert.equal(C.category(row(name,{category:'Мясо и птица'})),expected,name);
