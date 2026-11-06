@@ -79,7 +79,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<
 const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
 let KEY = lsGet(KEY_LS), RULES = null;
-const S = { kids: null, health: null, film: null, fin: null, polza: null, proxy: null, usage: null, ycloud: null, mode: lsGet("dash_mode") || "family", form: false, undo: false, view: null, bet: null, rec: null, recBusy: false, recErr: null, form2: null };
+const S = { kids: null, health: null, film: null, fin: null, polza: null, proxy: null, usage: null, ycloud: null, mode: lsGet("dash_mode") || "family", form: false, undo: false, view: null, bet: null, rec: null, recBusy: false, recErr: null, form2: null, watchlist: null, watchlistOpen: false, watchlistError: false };
 window.addEventListener("hashchange", () => { S.view = location.hash === "#film" ? "film" : null; render(); });
 
 async function api(fn, action, payload) {
@@ -226,6 +226,29 @@ function filmMeta(f) {
   const rt = f.rating ? "Кинопоиск " + String(f.rating).replace(".", ",") : f.my_rating != null ? "" : "рейтинг не проверен";
   return [f.year, f.genre, f.minutes ? f.minutes + " мин" : f.runtime, f.age != null && f.age !== "" ? f.age + "+" : "", rt].filter(Boolean).map(esc).join(" · ");
 }
+function watchKey(f) {
+  return String(f.title).toLowerCase().replace(/ё/g, "е").replace(/[^a-zа-я0-9]+/g, " ").trim() + "|" + (f.year || "");
+}
+function watchlistButton(f, blk, i) {
+  const saved = S.watchlist && S.watchlist.some((item) => watchKey(item) === watchKey(f) || (f.wiki && item.kinopoisk_url === f.wiki));
+  return `<button type="button" class="btn btn-secondary sm" data-act="watchlist-add" data-b="${blk}" data-i="${i}" ${saved ? "disabled" : ""}>${saved ? "В списке" : "Буду смотреть"}</button>`;
+}
+async function loadWatchlist() {
+  S.watchlistError = false;
+  try { S.watchlist = (await api("dash-watchlist", "films_watchlist")).films; }
+  catch { S.watchlistError = true; }
+  render();
+}
+function watchlistCard() {
+  let body = "";
+  if (S.watchlistOpen) {
+    if (S.watchlistError) body = '<p class="t-text-s">Список не загрузился. <button type="button" class="btn btn-secondary sm" data-act="watchlist-retry">Повторить</button></p>';
+    else if (!S.watchlist) body = '<p class="t-text-s">Загружаю список…</p>';
+    else if (!S.watchlist.length) body = '<p class="t-text-s">Добавьте фильм из рекомендаций.</p>';
+    else body = '<div class="stack" style="max-height:460px;overflow:auto">'+ S.watchlist.map(f => `<div class="row"><div class="grow"><b>${f.kinopoisk_url ? `<a href="${esc(f.kinopoisk_url)}" target="_blank" rel="noopener">${esc(f.title)}</a>` : esc(f.title)}</b> ${f.year ? `<span class="t-text-s t-muted">${esc(f.year)}</span>` : ""}</div></div>`).join("") + "</div>";
+  }
+  return `<section class="card"><h2>Буду смотреть <button type="button" class="btn btn-secondary sm" data-act="watchlist-toggle" aria-expanded="${S.watchlistOpen}">${S.watchlistOpen ? "Свернуть" : "Открыть"}${S.watchlist ? ` · ${S.watchlist.length}` : ""}</button></h2>${body}</section>`;
+}
 function filmCard() {
   const FF = S.film;
   if (!FF) return { full: `<div class="card" id="film"><h2>Фильм на вечер</h2><p class="t-text-s t-muted">Автоподбор отключён. Платный запрос в Polza отправляется только по кнопке «Подобрать» в форме.</p><button class="btn btn-primary sm" data-act="film-all">Открыть форму подбора →</button></div>`, fold: "" };
@@ -237,7 +260,7 @@ function filmCard() {
     <div class="film" style="margin-top:10px">${f.poster ? `<img src="${esc(f.poster)}" alt="">` : `<img alt="">`}
       <div><h3>${esc(f.title)}</h3><div class="t-text-s t-muted">${filmMeta(f)}</div>
       <p>${esc(pk.reason || f.why || "")}</p>${f.description ? `<p class="t-text-s t-muted">${esc(f.description)}</p>` : ""}
-      <div class="acts"><button class="btn btn-primary sm" data-act="watch">Смотрим</button>${FF.new.length > 1 ? '<button class="btn btn-secondary sm" data-act="next">Другой</button>' : ""}${f.wiki ? `<a class="btn btn-secondary sm" href="${esc(f.wiki)}" target="_blank" rel="noopener">Подробнее</a>` : ""}</div></div></div></div>` };
+      <div class="acts"><button class="btn btn-primary sm" data-act="watch">Смотрим</button>${watchlistButton(f, "pick", 0)}${FF.new.length > 1 ? '<button class="btn btn-secondary sm" data-act="next">Другой</button>' : ""}${f.wiki ? `<a class="btn btn-secondary sm" href="${esc(f.wiki)}" target="_blank" rel="noopener">Подробнее</a>` : ""}</div></div></div></div>` };
 }
 function filmCardFull(f, rewatch, blk, i) {
   const title = f.wiki ? `<a href="${esc(f.wiki)}" target="_blank" rel="noopener">${esc(f.title)}</a>` : esc(f.title);
@@ -247,7 +270,7 @@ function filmCardFull(f, rewatch, blk, i) {
     <div class="grow"><div><b>${title}</b>${orig}${badge}</div><div class="t-text-s t-muted">${filmMeta(f)}</div>
       ${f.description ? `<div class="t-text-s t-muted" style="margin-top:4px">${esc(f.description)}</div>` : ""}
       ${f.why ? `<div class="why"><b>Почему тебе:</b> ${esc(f.why)}</div>` : ""}</div>
-    <div class="acts"><button class="btn btn-secondary sm" data-act="watch">Смотрим</button><button class="btn btn-secondary sm" data-act="seen" data-b="${blk}" data-i="${i}">Уже смотрел</button></div></div>`;
+    <div class="acts"><button class="btn btn-secondary sm" data-act="watch">Смотрим</button>${watchlistButton(f, blk, i)}<button class="btn btn-secondary sm" data-act="seen" data-b="${blk}" data-i="${i}">Уже смотрел</button></div></div>`;
 }
 function filmSection(title, list, rewatch, blk, empty) {
   const idx = (f) => list.indexOf(f);
@@ -286,7 +309,7 @@ function filmResults(D) {
 }
 function filmView() {
   const D = S.rec || S.film;
-  return filmForm() + filmResults(D && !D.error ? D : null);
+  return watchlistCard() + filmForm() + filmResults(D && !D.error ? D : null);
 }
 // Подпись плашки с балансом: «233,28 ₽ · пополнить»; пока грузится — «…», не ответил — обычная подпись
 function plateCaption(p) {
@@ -367,6 +390,25 @@ document.addEventListener("click", async (ev) => {
     if (act === "next") { const n = S.film && S.film.new ? S.film.new.length : 0; S.bet = n ? ((S.bet == null ? 0 : S.bet) + 1) % n : null; return render(); }
     if (act === "film-all") { location.hash = "#film"; return; }
     if (act === "film-back") { history.replaceState(null, "", location.pathname + location.search); S.view = null; return render(); }
+    if (act === "watchlist-toggle") {
+      S.watchlistOpen = !S.watchlistOpen;
+      render();
+      if (S.watchlistOpen && !S.watchlist) await loadWatchlist();
+      return;
+    }
+    if (act === "watchlist-retry") return loadWatchlist();
+    if (act === "watchlist-add") {
+      const D = S.rec || S.film;
+      const f = b.dataset.b === "pick" ? pickFilm(S.film)?.f : D?.[b.dataset.b]?.[+b.dataset.i];
+      if (!f) return;
+      b.disabled = true;
+      try {
+        await api("dash-watchlist", "films_watchlist_add", { title: f.title, year: f.year, kinopoisk_url: f.wiki });
+        await loadWatchlist();
+        toast("Добавлено в «Буду смотреть»");
+      } finally { b.disabled = false; }
+      return;
+    }
     if (act === "watch") return toast("Приятного просмотра!");
     if (act === "seen") {
       const D = S.rec || S.film, blk = b.dataset.b, f = D[blk][+b.dataset.i], r = prompt(`«${f.title}»: оценка от 1 до 10 (можно пропустить)`, "");
