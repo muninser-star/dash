@@ -53,6 +53,12 @@ body{padding-bottom:max(24px,env(safe-area-inset-bottom))}
 .skel{height:64px;border-radius:12px;margin-top:10px;background:linear-gradient(90deg,var(--surface-2) 25%,var(--surface-3) 50%,var(--surface-2) 75%);background-size:200% 100%;animation:shimmer 1.4s ease-in-out infinite}
 @keyframes spin{to{transform:rotate(360deg)}}@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
 @media (prefers-reduced-motion:reduce){.loader .spin,.skel{animation-duration:3s}}
+.watch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,235px),1fr));gap:var(--sp-2)}
+.watch-tile{min-width:0;padding:var(--sp-3);border-radius:var(--r-xl);background:var(--surface-1)}
+.watch-tile h3{margin:0 0 var(--sp-2);font:600 16px/22px var(--font)}
+.watch-tags{display:flex;gap:6px;flex-wrap:wrap}
+.watch-desc{margin:var(--sp-2) 0 0;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.watch-pages{justify-content:center;align-items:center;margin-top:var(--sp-3)}
 </style>
 </head>
 <body>
@@ -233,11 +239,37 @@ function watchlistButton(f, blk, i) {
   const saved = S.watchlist && S.watchlist.some((item) => watchKey(item) === watchKey(f) || (f.wiki && item.kinopoisk_url === f.wiki));
   return `<button type="button" class="btn btn-secondary sm" data-act="watchlist-add" data-b="${blk}" data-i="${i}" ${saved ? "disabled" : ""}>${saved ? "В списке" : "Буду смотреть"}</button>`;
 }
+const watchFilters = { genre: "", kind: "", page: 0 };
+const watchKinds = { film: "Фильм", series: "Сериал", animation: "Мультфильм", unknown: "Тип не указан" };
+const attemptedDescriptions = new Set();
+const watchPageSize = 8;
+const watchGenres = (f) => String(f.genre || "").split(/[,;/]+/).map(g => g.trim().toLowerCase()).filter(Boolean);
+const watchKind = (f) => f.kind || (watchGenres(f).some(g => g === "мультфильм" || g === "аниме") ? "animation" : f.kinopoisk_url?.includes("/series/") ? "series" : "unknown");
+function filteredWatchlist() {
+  return (S.watchlist || []).filter(f =>
+    (!watchFilters.genre || watchGenres(f).includes(watchFilters.genre)) &&
+    (!watchFilters.kind || watchKind(f) === watchFilters.kind));
+}
+async function loadWatchDescriptions() {
+  if (!S.watchlistOpen) return;
+  const start = watchFilters.page * watchPageSize;
+  const ids = filteredWatchlist().slice(start, start + watchPageSize)
+    .filter(f => f.id && f.kinopoisk_url && !f.description && !attemptedDescriptions.has(f.id)).map(f => f.id);
+  if (!ids.length) return;
+  ids.forEach(id => attemptedDescriptions.add(id));
+  try {
+    const { films } = await api("dash-watchlist", "films_watchlist_descriptions", { ids });
+    const descriptions = new Map(films.map(f => [f.id, f.description]));
+    S.watchlist?.forEach(f => { if (descriptions.has(f.id)) f.description = descriptions.get(f.id); });
+    if (descriptions.size) render();
+  } catch { /* оставляем ссылку на карточку фильма */ }
+}
 async function loadWatchlist() {
   S.watchlistError = false;
   try { S.watchlist = (await api("dash-watchlist", "films_watchlist")).films; }
   catch { S.watchlistError = true; }
   render();
+  void loadWatchDescriptions();
 }
 function watchlistCard() {
   let body = "";
@@ -245,9 +277,28 @@ function watchlistCard() {
     if (S.watchlistError) body = '<p class="t-text-s">Список не загрузился. <button type="button" class="btn btn-secondary sm" data-act="watchlist-retry">Повторить</button></p>';
     else if (!S.watchlist) body = '<p class="t-text-s">Загружаю список…</p>';
     else if (!S.watchlist.length) body = '<p class="t-text-s">Добавьте фильм из рекомендаций.</p>';
-    else body = '<div class="stack" style="max-height:460px;overflow:auto">'+ S.watchlist.map(f => `<div class="row"><div class="grow"><b>${f.kinopoisk_url ? `<a href="${esc(f.kinopoisk_url)}" target="_blank" rel="noopener">${esc(f.title)}</a>` : esc(f.title)}</b> ${f.year ? `<span class="t-text-s t-muted">${esc(f.year)}</span>` : ""}</div></div>`).join("") + "</div>";
+    else {
+      const genres = [...new Set(S.watchlist.flatMap(watchGenres))].sort((a, b) => a.localeCompare(b, "ru"));
+      const option = (value, title, selected) => `<option value="${esc(value)}" ${value === selected ? "selected" : ""}>${esc(title)}</option>`;
+      const matches = filteredWatchlist();
+      const pageCount = Math.max(1, Math.ceil(matches.length / watchPageSize));
+      watchFilters.page = Math.min(watchFilters.page, pageCount - 1);
+      const start = watchFilters.page * watchPageSize;
+      body = `<div class="frow watch-filters">
+        <label>Жанр<select class="select" data-watch-filter="genre">${option("", "Все жанры", watchFilters.genre)}${genres.map(g => option(g, g[0].toUpperCase() + g.slice(1), watchFilters.genre)).join("")}</select></label>
+        <label>Тип<select class="select" data-watch-filter="kind">${option("", "Все типы", watchFilters.kind)}${Object.entries(watchKinds).filter(([k]) => k !== "unknown" || S.watchlist.some(f => watchKind(f) === k)).map(([k, title]) => option(k, title, watchFilters.kind)).join("")}</select></label>
+      </div><p class="t-text-s t-muted" aria-live="polite">Найдено ${matches.length} из ${S.watchlist.length}</p>`;
+      if (!matches.length) body += '<p class="t-text-s">Под эти фильтры ничего не подошло.</p>';
+      else body += `<div class="watch-grid">${matches.slice(start, start + watchPageSize).map(f => {
+        const title = f.kinopoisk_url ? `<a href="${esc(f.kinopoisk_url)}" target="_blank" rel="noopener">${esc(f.title)}</a>` : esc(f.title);
+        const tags = [f.year, watchKinds[watchKind(f)], ...watchGenres(f).filter(g => g !== "мультфильм")].filter(Boolean);
+        return `<article class="watch-tile"><h3>${title}</h3><div class="watch-tags">${tags.map(tag => `<span class="badge">${esc(tag)}</span>`).join("")}</div>
+          ${f.description ? `<p class="t-text-s watch-desc">${esc(f.description)}</p>` : '<p class="t-text-s t-muted watch-desc">Описание пока недоступно</p>'}</article>`;
+      }).join("")}</div>`;
+      if (pageCount > 1) body += `<div class="acts watch-pages"><button type="button" class="btn btn-secondary sm" data-act="watchlist-page" data-step="-1" ${start ? "" : "disabled"}>← Назад</button><span class="t-text-s">${watchFilters.page + 1} / ${pageCount}</span><button type="button" class="btn btn-secondary sm" data-act="watchlist-page" data-step="1" ${watchFilters.page + 1 < pageCount ? "" : "disabled"}>Дальше →</button></div>`;
+    }
   }
-  return `<section class="card"><h2>Буду смотреть <button type="button" class="btn btn-secondary sm" data-act="watchlist-toggle" aria-expanded="${S.watchlistOpen}">${S.watchlistOpen ? "Свернуть" : "Открыть"}${S.watchlist ? ` · ${S.watchlist.length}` : ""}</button></h2>${body}</section>`;
+  return `<section class="card" id="watchlist"><h2>Буду смотреть <button type="button" class="btn btn-secondary sm" data-act="watchlist-toggle" aria-expanded="${S.watchlistOpen}">${S.watchlistOpen ? "Свернуть" : "Открыть"}${S.watchlist ? ` · ${S.watchlist.length}` : ""}</button></h2>${body}</section>`;
 }
 function filmCard() {
   const FF = S.film;
@@ -405,6 +456,14 @@ document.addEventListener("click", async (ev) => {
       S.watchlistOpen = !S.watchlistOpen;
       render();
       if (S.watchlistOpen && !S.watchlist) await loadWatchlist();
+      else void loadWatchDescriptions();
+      return;
+    }
+    if (act === "watchlist-page") {
+      watchFilters.page = Math.max(0, watchFilters.page + Number(b.dataset.step));
+      render(true);
+      document.getElementById("watchlist")?.scrollIntoView({ block: "start" });
+      void loadWatchDescriptions();
       return;
     }
     if (act === "watchlist-retry") return loadWatchlist();
@@ -414,7 +473,7 @@ document.addEventListener("click", async (ev) => {
       if (!f) return;
       b.disabled = true;
       try {
-        await api("dash-watchlist", "films_watchlist_add", { title: f.title, year: f.year, kinopoisk_url: f.wiki });
+        await api("dash-watchlist", "films_watchlist_add", { title: f.title, year: f.year, kinopoisk_url: f.wiki, genre: f.genre, kind: f.kind, description: f.description });
         await loadWatchlist();
         toast("Добавлено в «Буду смотреть»");
       } finally { b.disabled = false; }
@@ -449,6 +508,15 @@ document.addEventListener("click", async (ev) => {
       toast(act === "booked" ? "Отмечено: записан" : act === "done" ? "Выполнено" : "Напомню через неделю", act === "booked" ? null : async () => { await api("mk", "task_state_set", { person: c.person, key: c.title, status: "clear" }); }); return render();
     }
   } catch { toast("Не получилось. Попробуйте ещё раз"); }
+});
+document.addEventListener("change", (ev) => {
+  const field = ev.target.dataset?.watchFilter;
+  if (field !== "genre" && field !== "kind") return;
+  watchFilters[field] = ev.target.value;
+  watchFilters.page = 0;
+  render(true);
+  document.querySelector(`[data-watch-filter="${field}"]`)?.focus({ preventScroll: true });
+  void loadWatchDescriptions();
 });
 document.addEventListener("submit", async (ev) => {
   const f = ev.target.closest && ev.target.closest("#recForm"); if (!f) return;
