@@ -1,4 +1,4 @@
-import { addDays, minutes, normalizeTime, timeOf, validDate, validTime } from './schedule.mjs';
+import { addDays, isHealthTitle, minutes, normalizeTime, timeOf, validDate, validTime } from './schedule.mjs?v=5';
 
 const week = [
   'пн|понедельник(?:ам)?', 'вт|вторник(?:ам)?', 'ср|сред[ауы]|средам', 'чт|четверг(?:ам)?',
@@ -19,7 +19,8 @@ function classify(title) {
   if (/продл[её]н/iu.test(title)) return { category: 'school', school_kind: 'aftercare' };
   if (/^(?:детский\s+)?сад(?:ик)?$/iu.test(title)) return { category: 'school', school_kind: 'kindergarten' };
   if (/^школа$/iu.test(title)) return { category: 'school', school_kind: 'school' };
-  if (/психолог|врач|при[её]м|стоматолог|музей|театр|выставк|экскурс|прививк/iu.test(title)) return { category: 'other', school_kind: null };
+  if (isHealthTitle(title)) return { category: 'health', school_kind: null };
+  if (/музей|театр|выставк|экскурс/iu.test(title)) return { category: 'other', school_kind: null };
   return { category: 'club', school_kind: null };
 }
 

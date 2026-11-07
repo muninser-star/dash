@@ -10,8 +10,8 @@
   <meta name="theme-color" content="#101518" media="(prefers-color-scheme: dark)">
   <title>Школа и кружки · Семейный дашборд</title>
   <link rel="stylesheet" href="../токены.css">
-  <link rel="stylesheet" href="style.css?v=4">
-  <script type="module" src="app.mjs?v=4"></script>
+  <link rel="stylesheet" href="style.css?v=5">
+  <script type="module" src="app.mjs?v=5"></script>
 </head>
 <body>
   <main class="shell">
@@ -67,7 +67,7 @@
           <div class="week-scroll" id="week-scroll" tabindex="0" role="region" aria-label="Недельная сетка по времени">
             <div id="week" class="week"></div>
           </div>
-          <div class="legend" id="week-legend"><span class="school">Школа / сад</span><span class="club">Кружки</span><span class="other">Прочее</span></div>
+          <div class="legend" id="week-legend"><span class="school">Школа / сад</span><span class="aftercare">Продлёнка</span><span class="club">Кружки</span><span class="health">Здоровье</span><span class="other">Прочее</span></div>
         </section>
         <div class="reference">
           <section class="panel walking" id="walking" aria-labelledby="walking-title" hidden>
@@ -94,7 +94,7 @@
       <label>Название<input name="title" required maxlength="120" placeholder="Например, английский"></label>
       <div class="fields">
         <label>Ребёнок<select name="child"><option value="dima">Дима</option><option value="danya">Даня</option></select></label>
-        <label>Тип<select name="category"><option value="school">Школа / сад</option><option value="club">Кружки</option><option value="other">Прочее</option></select></label>
+        <label>Тип<select name="category"><option value="school">Школа / сад</option><option value="club">Кружки</option><option value="health">Здоровье</option><option value="other">Прочее</option></select></label>
       </div>
       <div class="fields" id="school-fields" hidden>
         <label>Что именно<select name="school_kind"><option value="school">Школа</option><option value="lesson">Урок</option><option value="aftercare">Продлёнка</option><option value="kindergarten">Сад</option></select></label>

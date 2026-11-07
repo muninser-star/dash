@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
 import { addDays, dayClosure, departureTime, eventInput, normalizeTime, occurs, validDate, validTime } from "../../../school/schedule.mjs";
+import { mergeGoogleEvents } from "./google.mjs";
 
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
@@ -40,13 +41,14 @@ function bellInput(row: { lesson: number; start_time: string; end_time: string }
 
 async function list(from: string, to: string) {
   if (!validDate(from) || !validDate(to) || to < from || to > addDays(from, 30)) return fail("invalid_range");
-  const [eventResult, skipResult, bellResult, closureResult, routeResult] = await Promise.all([
+  const [eventResult, skipResult, bellResult, closureResult, routeResult, google] = await Promise.all([
     db.from("dash_school_events").select("*").lte("date", to).or("until.is.null,until.gte." + from)
       .or("weekdays.neq.{},date.gte." + from).order("start_time").order("id"),
     db.from("dash_school_skips").select("event_id,date").gte("date", from).lte("date", to),
     db.from("dash_school_bells").select("*").order("lesson"),
     db.from("dash_school_closures").select("date_from,date_to,kind,label").lte("date_from", to).gte("date_to", from).order("date_from"),
     db.from("dash_school_routes").select("id,label,place,meters,minutes").order("sort_order"),
+    listFamilyCalendar(from, to),
   ]);
   if (eventResult.error || skipResult.error || bellResult.error || closureResult.error || routeResult.error) throw Error("database_read");
   const rows = eventResult.data.map(normalize);
@@ -69,7 +71,29 @@ async function list(from: string, to: string) {
       });
     }
   }
-  return ok({ events, bells: bellResult.data.map(normalize), closures, routes: routeResult.data });
+  return ok({ events: mergeGoogleEvents(events, google, from, to, routeMinutes), bells: bellResult.data.map(normalize), closures, routes: routeResult.data });
+}
+
+async function listFamilyCalendar(from: string, to: string) {
+  // The existing dashboard service reads the configured family calendar when Google access is available.
+  const key = Deno.env.get("FAMILY_BOT_SOURCE_KEY");
+  if (key && Deno.env.get("GOOGLE_SA_JSON") && Deno.env.get("DASH_CALENDAR_ID")) {
+    try {
+      const response = await fetch(Deno.env.get("SUPABASE_URL") + "/functions/v1/dash", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-mk-key": key },
+        body: JSON.stringify({ action: "sched_list", from: from + "T00:00:00+03:00", to: addDays(to, 1) + "T00:00:00+03:00" }),
+        signal: AbortSignal.timeout(5000),
+      });
+      const result = await response.json();
+      if (response.ok && result.status === "ok" && Array.isArray(result.events) && result.events.length < 100) return result.events;
+    } catch {
+      console.warn("school_live_calendar_unavailable");
+    }
+  }
+  const snapshot = await db.from("dash_school_google_snapshot").select("events").eq("singleton", true).maybeSingle();
+  if (snapshot.error) console.warn("school_calendar_snapshot_unavailable");
+  return snapshot.data?.events ?? [];
 }
 
 Deno.serve(async req => {

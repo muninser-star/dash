@@ -1,6 +1,6 @@
 import { addDays, categories, children, days, departureTime, eventInput, formatDate, minutes,
-  monday, schoolBlocks, schoolKinds, timeOf, timelineLanes, today, travelClock, validDate, validTime, weekday } from './schedule.mjs?v=4';
-import { parseSchedule } from './import.mjs';
+  monday, schoolBlocks, schoolKinds, timeOf, timelineLanes, today, travelClock, validDate, validTime, weekday } from './schedule.mjs?v=5';
+import { parseSchedule } from './import.mjs?v=5';
 
 const $ = id => document.getElementById(id);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
@@ -105,12 +105,24 @@ const filtered = date => state.rows.filter(e => e.occurrence === date && (state.
 const type = e => e.school_kind ? schoolKinds[e.school_kind] : categories[e.category];
 const dayOffLabels = { holiday: 'Праздник', vacation: 'Каникулы', weekend: 'Выходной' };
 const rowKey = e => e.id + '/' + e.occurrence;
-const childTag = child => '<span class="child-tag child-' + child + '">' + children[child] + '</span>';
+const people = { ...children, family: 'Семья' };
+const childTag = child => '<span class="child-tag child-' + child + '">' + people[child] + '</span>';
 const routeFor = e => state.routes.get(e.route_id);
 const walkTime = route => '≈ ' + route.minutes + ' мин';
 const schoolDayEvent = e => e.category === 'school' && e.school_kind !== 'kindergarten';
 const leaveAt = (e, travel) => e.departure_time || departureTime(e.start_time, travel);
 const minimumCardHeight = 44, axisWidth = 48;
+const activityIcons = [
+  [/нейропсихолог/iu, '🧠'], [/футбол/iu, '⚽'], [/бассейн|плаван/iu, '🌊'], [/гимнастик/iu, '🤸'],
+  [/английск/iu, '🔤'], [/лего/iu, '🧱'], [/стоматолог|ортодонт/iu, '🦷'],
+  [/музей|выставк/iu, '🏛️'], [/театр/iu, '🎭'], [/шахмат/iu, '♟️'],
+];
+const categoryIcons = { club: '🎯', health: '🩺', other: '📌' };
+const schoolIcons = { school: '🎒', aftercare: '🧩', kindergarten: '🧸' };
+function eventTitle(e) {
+  const icon = activityIcons.find(([pattern]) => pattern.test(e.title))?.[1] || schoolIcons[e.school_kind] || categoryIcons[e.category];
+  return (icon ? '<span class="event-icon" aria-hidden="true">' + icon + '</span>' : '') + esc(e.title);
+}
 function weekLabel() {
   const end = addDays(state.week, 6);
   if (end.slice(0, 7) === state.week.slice(0, 7)) return Number(state.week.slice(8)) + '–' + formatDate(end);
@@ -121,12 +133,13 @@ function weekEvent(e) {
   const route = routeFor(e);
   const school = e.category === 'school';
   const length = minutes(e.end_time) - minutes(e.start_time);
-  const elapsed = school ? '' : '<span class="week-duration">' + length + ' мин</span>';
-  const action = school ? ' data-day="' + e.occurrence : ' data-event="' + rowKey(e);
+  const elapsed = school || e.all_day ? '' : '<span class="week-duration">' + length + ' мин</span>';
+  const action = school || e.source === 'google' ? ' data-day="' + e.occurrence : ' data-event="' + rowKey(e);
   const time = '<time>' + e.start_time + '</time>' + (school ? '–<time>' + e.end_time + '</time>' : '');
-  return '<button type="button" class="week-item ' + e.category + (e.tentative ? ' tentative' : '') + '"' + action +
-    '" title="' + esc(children[e.child] + ' · ' + e.title) + '"><span class="week-item-head"><span class="week-time">' + time +
-    '</span>' + elapsed + '</span><span class="week-item-title">' + esc(e.title) +
+  const kind = e.school_kind === 'aftercare' ? 'school aftercare' : e.category;
+  const head = e.all_day ? '' : '<span class="week-item-head"><span class="week-time">' + time + '</span>' + elapsed + '</span>';
+  return '<button type="button" class="week-item ' + kind + (e.all_day ? ' all-day' : '') + (e.tentative ? ' tentative' : '') + '"' + action +
+    '" title="' + esc(people[e.child] + ' · ' + e.title) + '">' + head + '<span class="week-item-title">' + eventTitle(e) +
     '</span><span class="week-item-meta">' + childTag(e.child) +
     (route ? '<span class="week-walk" role="img" title="Пешком от дома" aria-label="Пешком от дома ' + walkTime(route) + '">' +
       '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13" cy="5" r="2"/><path d="m7 21 4-6-1-4m8 10-4-5 1-6m-8 3 4-5 4 2 4 3"/></svg>' +
@@ -152,36 +165,42 @@ function renderWeek(current, available) {
   const daily = days.map((label, i) => {
     const date = addDays(state.week, i);
     const rows = filtered(date);
-    const blocks = schoolBlocks(rows).map(({ kind, first, last, routeId }) => ({
-      ...first, title: schoolKinds[kind], end_time: last.end_time, route_id: routeId,
-    }));
+    const school = schoolBlocks(rows, true);
+    const blocks = school.map(({ kind, first, last, routeId }) => {
+      const staysAtSchool = kind === 'aftercare' && school.some(block =>
+        block.kind === 'school' && block.first.child === first.child && block.routeId === routeId);
+      return { ...first, school_kind: kind, title: schoolKinds[kind], end_time: last.end_time, route_id: staysAtSchool ? null : routeId };
+    });
     const events = [...rows.filter(e => e.category !== 'school'), ...blocks].sort((a, b) => a.start_time.localeCompare(b.start_time));
     return { label, date, events };
   });
-  const weekEvents = daily.flatMap(day => day.events);
+  const weekEvents = daily.flatMap(day => day.events.filter(e => !e.all_day));
   const fromHour = Math.floor(Math.min(8 * 60, ...weekEvents.map(e => minutes(e.start_time))) / 60);
   const toHour = Math.ceil(Math.max(20 * 60, ...weekEvents.map(e => minutes(e.end_time))) / 60);
   const week = $('week');
   const headerHeight = parseFloat(getComputedStyle(week).getPropertyValue('--day-head-height'));
-  const chromeHeight = $('week-nav').offsetHeight + $('week-legend').offsetHeight + headerHeight;
+  const allDayHeight = 32 * Math.max(...daily.map(day => day.events.filter(e => e.all_day).length));
+  const chromeHeight = $('week-nav').offsetHeight + $('week-legend').offsetHeight + headerHeight + allDayHeight;
   // Leave room for the scroll bar, panel borders and the anchor's top margin.
   const budget = Math.max(minimumCardHeight + 1, window.innerHeight - chromeHeight - 44);
   const lastStart = Math.max(60, ...weekEvents.map(e => minutes(e.start_time) - fromHour * 60));
   const hourHeight = Math.max(1, Math.floor(Math.min(64, budget / (toHour - fromHour), (budget - minimumCardHeight) * 60 / lastStart)));
-  const columns = daily.map(day => timelineLanes(day.events, fromHour * 60, hourHeight, minimumCardHeight));
+  const columns = daily.map(day => timelineLanes(day.events.filter(e => !e.all_day), fromHour * 60, hourHeight, minimumCardHeight));
   const trackHeight = Math.max((toHour - fromHour) * hourHeight, ...columns.flat().map(item => item.top + item.height));
   const widths = columns.map(items => Math.max(130, ...items.map(item => item.lanes * 102)));
   const hours = Array.from({ length: toHour - fromHour + 1 }, (_, i) => '<span>' + timeOf((fromHour + i) * 60) + '</span>').join('');
   week.style.setProperty('--hour-height', hourHeight + 'px');
   week.style.setProperty('--track-height', trackHeight + 'px');
+  week.style.setProperty('--all-day-height', allDayHeight + 'px');
   week.style.minWidth = axisWidth + widths.reduce((a, b) => a + b, 0) + 'px';
   week.style.gridTemplateColumns = axisWidth + 'px ' + widths.map(width => 'minmax(' + width + 'px, 1fr)').join(' ');
-  week.innerHTML = '<div class="time-axis" aria-hidden="true"><div class="time-axis-head">Время</div><div class="hour-labels">' + hours + '</div></div>' +
+  const allDayLabel = allDayHeight ? '<div class="all-day-label">Весь день</div>' : '';
+  week.innerHTML = '<div class="time-axis" aria-hidden="true"><div class="time-axis-head">Время</div>' + allDayLabel + '<div class="hour-labels">' + hours + '</div></div>' +
     daily.map(({ label, date, events }) => {
     const kinds = [...new Set(events.map(e => e.category))];
-    const dayChildren = Object.keys(children).filter(child => events.some(e => e.child === child));
+    const dayChildren = Object.keys(people).filter(child => events.some(e => e.child === child));
     const closed = state.closures.get(date);
-    const details = [...dayChildren.map(child => children[child]), ...kinds.map(kind => categories[kind])];
+    const details = [...dayChildren.map(child => people[child]), ...kinds.map(kind => categories[kind])];
     const labelFull = fmt(date) + (closed ? ', ' + closed.label : '') +
       (!available ? ', нет данных' : events.length ? ', событий: ' + events.length + ', ' + details.join(', ') : ', без событий');
     const special = closed && closed.kind !== 'weekend';
@@ -190,7 +209,8 @@ function renderWeek(current, available) {
       '" aria-pressed="' + (date === state.day) + '"' + (date === current ? ' aria-current="date"' : '') +
       '><span>' + label + '</span><strong>' + Number(date.slice(8)) + '</strong>' +
       (closed ? '<span class="day-off-label" aria-hidden="true">' + dayOffLabels[closed.kind] + '</span>' : '') + '</button>' +
-      '<div class="day-track">' + events.map(weekEvent).join('') + '</div></div>';
+      (allDayHeight ? '<div class="all-day-items">' + events.filter(e => e.all_day).map(weekEvent).join('') + '</div>' : '') +
+      '<div class="day-track">' + events.filter(e => !e.all_day).map(weekEvent).join('') + '</div></div>';
   }).join('');
   for (const [i, track] of [...week.querySelectorAll('.day-track')].entries()) {
     for (const [j, card] of [...track.children].entries()) {
@@ -249,14 +269,17 @@ function agendaRow(e) {
     if (home != null) trip.push('Дома около <strong>' + travelClock(e.end_time, home) + '</strong>');
   }
   const place = e.place || (!school && route?.place);
-  return '<article class="agenda-row' + (school ? ' academic-row' : '') + '"><div class="when">' + e.start_time + '–' + e.end_time + '</div><div><h3 class="event-title">' + esc(e.title) + '</h3>' +
+  const when = e.all_day ? 'Весь день' : e.start_time + '–' + e.end_time;
+  const edit = e.source === 'google' ? '' : '<button type="button" class="event-edit" data-event="' + rowKey(e) + '" aria-label="Изменить: ' + esc(e.title) +
+    '" title="Изменить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 4 4 4M4 20l4-.8L21 6.2 17.8 3 4.8 16z"/></svg></button>';
+  return '<article class="agenda-row' + (school ? ' academic-row' : '') + '"><div class="when">' + when + '</div><div><h3 class="event-title">' + eventTitle(e) + '</h3>' +
     '<div class="meta">' + childTag(e.child) + '<span class="tag ' + e.category + '">' + type(e) + '</span>' +
+    (e.source === 'google' ? '<span class="muted">Google Календарь</span>' : '') +
     (e.tentative ? '<span class="tag tentative">Уточнить</span>' : '') + '</div>' +
     (place ? '<p class="place">' + esc(place) + '</p>' : '') +
     (trip.length ? '<p class="travel"><span>' + trip.join('</span><span>') + '</span></p>' : '') +
     (e.note ? '<p class="event-note">' + esc(e.note) + '</p>' : '') +
-    '</div><button type="button" class="event-edit" data-event="' + rowKey(e) + '" aria-label="Изменить: ' + esc(e.title) +
-    '" title="Изменить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 4 4 4M4 20l4-.8L21 6.2 17.8 3 4.8 16z"/></svg></button></article>';
+    '</div>' + edit + '</article>';
 }
 function go(date, openLessons = false) {
   if (!validDate(date)) return;

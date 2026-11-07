@@ -1,5 +1,5 @@
 export const children = { dima: 'Дима', danya: 'Даня' };
-export const categories = { school: 'Школа / сад', club: 'Кружки', other: 'Прочее' };
+export const categories = { school: 'Школа / сад', club: 'Кружки', health: 'Здоровье', other: 'Прочее' };
 export const schoolKinds = { school: 'Школа', lesson: 'Урок', aftercare: 'Продлёнка', kindergarten: 'Сад' };
 export const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
@@ -31,11 +31,14 @@ export function dayClosure(date, ranges) {
   return null;
 }
 
-export function schoolBlocks(events) {
+export const isHealthTitle = title => /психолог|педиатр|врач|при[её]м|стоматолог|поликлиник|прививк|анализ|ортодонт|офтальмолог|кардиолог|медосмотр/iu.test(title);
+
+export function schoolBlocks(events, separateAftercare = false) {
   const blocks = new Map();
   for (const event of events) {
     if (event.category !== 'school') continue;
-    const kind = event.school_kind === 'kindergarten' ? 'kindergarten' : 'school';
+    const standalone = event.school_kind === 'kindergarten' || (separateAftercare && event.school_kind === 'aftercare');
+    const kind = standalone ? event.school_kind : 'school';
     const key = event.child + '/' + kind;
     if (!blocks.has(key)) blocks.set(key, { kind, first: event, last: event, routeId: event.route_id });
     const block = blocks.get(key);

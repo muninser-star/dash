@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { dayClosure, departureTime, eventInput, loadMinutes, monday, occurs, schoolBlocks, timelineLanes, today, travelClock } from '../school/schedule.mjs';
 import { parseSchedule } from '../school/import.mjs';
+import { mergeGoogleEvents } from '../supabase/functions/school/google.mjs';
 
 test('school blocks include aftercare and keep children and kindergarten separate', () => {
   const lesson = { child: 'dima', category: 'school', school_kind: 'lesson', start_time: '08:30', end_time: '09:05' };
@@ -14,6 +15,31 @@ test('school blocks include aftercare and keep children and kindergarten separat
     { kind: 'kindergarten', first: kindergarten, last: kindergarten, routeId: undefined },
     { kind: 'school', first: otherSchool, last: otherSchool, routeId: undefined },
   ]);
+  assert.deepEqual(schoolBlocks([lesson, aftercare, kindergarten], true).map(block => block.kind), ['school', 'aftercare', 'kindergarten']);
+});
+
+test('Google activities replace matching local times and keep walking directions', () => {
+  const date = '2026-11-15';
+  const local = {
+    id: 'local', occurrence: date, child: 'dima', category: 'club', title: 'Бассейн',
+    start_time: '09:00', end_time: '09:50', route_id: 'pool', place: 'Magneto',
+  };
+  const football = { ...local, id: 'football', title: 'Футбол' };
+  const google = [
+    { id: '1', title: 'Дима. Бассейн', start: date + 'T06:30:00Z', end: date + 'T07:15:00Z' },
+    { id: '2', title: 'Педиатр', start: date + 'T12:00:00+03:00', end: date + 'T13:00:00+03:00' },
+    { id: '3', title: 'Поездка', start: date, end: '2026-11-17' },
+    { id: '4', title: 'Даня, гимнастика', start: date + 'T18:00:00+03:00', end: date + 'T19:00:00+03:00' },
+  ];
+  const result = mergeGoogleEvents([local, football], google, date, '2026-11-17', new Map([['pool', 7]]));
+  assert.equal(result.length, 6);
+  assert.ok(result.includes(football));
+  assert.ok(!result.includes(local));
+  const pool = result.find(e => e.title === 'Бассейн');
+  assert.deepEqual([pool.start_time, pool.end_time, pool.place, pool.departure_time], ['09:30', '10:15', 'Magneto', '09:18']);
+  assert.deepEqual(result.filter(e => e.all_day).map(e => e.occurrence), [date, '2026-11-16']);
+  assert.deepEqual(result.filter(e => e.category === 'health').map(e => e.child), ['family']);
+  assert.equal(result.find(e => e.id === 'google-4').child, 'danya');
 });
 
 const input = {
@@ -68,7 +94,7 @@ test('text import preserves child, weekday, date, duration and type', () => {
   assert.equal(bells.length, 0);
   assert.deepEqual(events.map(e => [e.title,e.child,e.weekdays,e.date,e.start_time,e.end_time,e.place,e.category]), [
     ['гимнастика','danya',[2,4],'','18:00','19:00','Мари','club'],
-    ['нейропсихолог','dima',[],'2026-11-10','17:35','18:15','','other'],
+    ['нейропсихолог','dima',[],'2026-11-10','17:35','18:15','','health'],
     ['продлёнка','danya',[],'2026-11-13','13:00','16:30','','school'],
   ]);
 });
