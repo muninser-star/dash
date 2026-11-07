@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self' https://cuhplpukqhdfutcymtmv.supabase.co; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'">
+  <meta name="theme-color" content="#f3f5f7">
+  <title>Школа и кружки · Семейный дашборд</title>
+  <link rel="stylesheet" href="../токены.css">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.mjs"></script>
+</head>
+<body>
+  <main class="shell">
+    <a class="back" href="../"><svg aria-hidden="true"><use href="../icons.svg#i-home"/></svg> Семейный дашборд</a>
+    <header class="heading">
+      <div>
+        <h1>Школа и кружки</h1>
+        <p>Расписание детей, нагрузка и время на дорогу.</p>
+      </div>
+      <div class="actions" id="header-actions" hidden>
+        <button type="button" id="import-open"><svg aria-hidden="true"><use href="../icons.svg#i-drive"/></svg> Импорт</button>
+        <button type="button" class="primary" id="add"><svg aria-hidden="true"><use href="../icons.svg#i-add"/></svg> Событие</button>
+      </div>
+    </header>
+    <form id="gate" class="panel gate" hidden>
+      <h2>Вход в семейный календарь</h2>
+      <label>Код от дашборда<input name="code" type="password" required autocomplete="off"></label>
+      <button class="primary">Открыть календарь</button>
+      <p id="gate-message" class="message" role="alert" hidden></p>
+    </form>
+    <p id="loading" class="panel notice" role="status">Открываю календарь…</p>
+    <div id="calendar" hidden>
+      <div id="notice" class="notice" role="status" hidden></div>
+      <section class="panel calendar" aria-label="Календарь на неделю">
+        <div class="toolbar">
+          <div class="filters" aria-label="Расписание ребёнка">
+            <button type="button" data-filter="all" aria-pressed="true">Все события</button>
+            <button type="button" data-filter="dima" aria-pressed="false"><i class="dot dima"></i>Дима</button>
+            <button type="button" data-filter="danya" aria-pressed="false"><i class="dot danya"></i>Даня</button>
+          </div>
+          <span class="timezone">Московское время</span>
+        </div>
+        <div class="week-nav">
+          <h2 id="week-title"></h2>
+          <div class="actions">
+            <button type="button" id="prev" class="arrow" aria-label="Предыдущая неделя"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button>
+            <button type="button" id="today">Сегодня</button>
+            <button type="button" id="next" class="arrow" aria-label="Следующая неделя"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></button>
+          </div>
+        </div>
+        <div id="week" class="week" aria-label="Дни недели"></div>
+        <div class="legend"><span class="school">Школа / сад</span><span class="club">Кружки</span><span class="other">Прочее</span></div>
+      </section>
+      <div class="below">
+        <section class="panel agenda" aria-labelledby="day-title">
+          <header class="agenda-head">
+            <div>
+              <h2 id="day-title"></h2>
+              <div id="day-load" class="load"></div>
+            </div>
+            <button type="button" id="day-add" aria-label="Добавить событие на выбранный день">+ Добавить</button>
+          </header>
+          <div id="agenda"></div>
+        </section>
+        <aside class="panel bells" aria-labelledby="bells-title">
+          <h2 id="bells-title">Звонки в школе</h2>
+          <p>Время уроков Димы. Предметы и продлёнку можно добавить в календарь.</p>
+          <div id="bells"></div>
+          <a class="telegram" href="https://t.me/Opal_Pilot_bot" target="_blank" rel="noopener">Расписание в Telegram <span>/school</span></a>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <dialog id="edit" aria-labelledby="edit-title">
+    <form id="event-form">
+      <header class="dialog-head"><h2 id="edit-title">Новое событие</h2><button type="button" data-close="edit" aria-label="Закрыть">×</button></header>
+      <p id="edit-description" class="hint" hidden></p>
+      <label>Название<input name="title" required maxlength="120" placeholder="Например, английский"></label>
+      <div class="fields">
+        <label>Ребёнок<select name="child"><option value="dima">Дима</option><option value="danya">Даня</option></select></label>
+        <label>Тип<select name="category"><option value="school">Школа / сад</option><option value="club">Кружки</option><option value="other">Прочее</option></select></label>
+      </div>
+      <div class="fields" id="school-fields" hidden>
+        <label>Что именно<select name="school_kind"><option value="school">Школа</option><option value="lesson">Урок</option><option value="aftercare">Продлёнка</option><option value="kindergarten">Сад</option></select></label>
+        <label id="lesson-field" hidden>Номер по звонкам<select name="lesson"><option value="">Время вручную</option></select></label>
+      </div>
+      <div class="fields time-fields">
+        <label id="event-date-label"><span>Дата</span><input name="date" type="date" required min="2000-01-01" max="2099-12-31"></label>
+        <label>Начало<input name="start_time" type="time" required></label>
+        <label>Конец<input name="end_time" type="time" required></label>
+      </div>
+      <label class="checkline"><input name="repeat" type="checkbox"> Повторять каждую неделю</label>
+      <fieldset id="repeat-fields" hidden>
+        <legend>Дни недели</legend>
+        <div id="weekdays" class="day-checks"></div>
+        <label>Последний день <span class="hint">(необязательно)</span><input name="until" type="date" min="2000-01-01" max="2099-12-31"></label>
+      </fieldset>
+      <label>Место<input name="place" maxlength="140" placeholder="Название или адрес"></label>
+      <div class="fields">
+        <label>Дорога туда, мин<input name="travel_out" type="number" min="0" max="360" step="1" placeholder="Указать"></label>
+        <label>Дорога обратно, мин<input name="travel_back" type="number" min="0" max="360" step="1" placeholder="Указать"></label>
+      </div>
+      <label>Заметка<input name="note" maxlength="300" placeholder="Например, взять форму"></label>
+      <label class="checkline"><input name="tentative" type="checkbox"> Время или занятие ещё нужно уточнить</label>
+      <p id="edit-message" class="message" role="alert" hidden></p>
+      <footer class="dialog-actions">
+        <div class="actions">
+          <button type="button" class="danger" id="skip" hidden>Пропустить этот день</button>
+          <button type="button" class="danger" id="delete" hidden>Удалить</button>
+        </div>
+        <button class="primary" id="save-event">Сохранить</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog id="import" aria-labelledby="import-title">
+    <div class="dialog-head"><h2 id="import-title">Импорт расписания</h2><button type="button" data-close="import" aria-label="Закрыть">×</button></div>
+    <form id="import-form">
+      <div class="fields">
+        <label>Для кого<select name="child"><option value="dima">Дима</option><option value="danya">Даня</option></select></label>
+        <label>Дата для строк без даты<input name="date" type="date" required min="2000-01-01" max="2099-12-31"></label>
+      </div>
+      <label>Фото расписания<input type="file" name="photo" accept="image/*"></label>
+      <label>Текст расписания<textarea name="text" maxlength="8000" rows="4" placeholder="Одна строка на событие. Например: вт и чт, гимнастика 18:00–19:00, Мари"></textarea></label>
+      <p class="hint">Фото обрабатывается на этом устройстве. Распознанный текст можно поправить, затем заново разобрать расписание.</p>
+      <button class="primary" id="analyze">Разобрать расписание</button>
+    </form>
+    <form id="preview" hidden></form>
+    <p id="import-message" class="message" role="status" hidden></p>
+  </dialog>
+</body>
+</html>

@@ -133,7 +133,18 @@ function today() { return new Date(Math.floor((Date.now() + 3 * 3600e3) / 86400e
 async function load() {
   const from = new Date(Date.now() - 3 * 3600e3).toISOString(), to = new Date(Date.now() + 50 * 3600e3).toISOString();
   S.kids = null; S.health = null; render();
-  api("dash", "sched_list", { from, to }).then((j) => { S.kids = { events: j.events }; render(); }).catch(() => { S.kids = { error: true }; render(); });
+  const schoolFrom = today(), schoolTo = new Date(Date.parse(schoolFrom) + 86400e3).toISOString().slice(0, 10);
+  Promise.allSettled([api("dash", "sched_list", { from, to }), api("school", "list", { from: schoolFrom, to: schoolTo })]).then(([legacy, school]) => {
+    if (legacy.status === "rejected" && school.status === "rejected") S.kids = { error: true };
+    else {
+      const rows = school.status === "fulfilled" ? school.value.events : [];
+      const key = (e) => [Dash.childOf(e), Date.parse(e.start), e.title.toLowerCase().trim().replace(/^(дима|даня)[\s:·–—-]+/u, "")].join("|");
+      const known = new Set(rows.map(key));
+      const old = legacy.status === "fulfilled" ? legacy.value.events.filter((e) => !known.has(key(e))) : [];
+      S.kids = { events: [...rows, ...old], legacy: legacy.status === "fulfilled", school: school.status === "fulfilled" };
+    }
+    render();
+  });
   Promise.all([api("mk", "medbook"), api("mk", "task_state_list")]).then(([m, st]) => {
     const states = {}; (st.rows || []).forEach((r) => { states[r.person + "|" + r.task_key] = { s: r.status, until: r.until }; });
     S.health = { items: Dash.healthItems(m.data), states };
@@ -173,17 +184,22 @@ const plural = (n, a, b, c) => { const m = n % 100, d = n % 10; return m > 10 &&
 
 function kidsCard(v) {
   if (!S.kids) return { full: `<div class="card"><h2>Дети</h2><span class="t-text-s t-muted">Загружаю…</span></div>`, fold: "" };
-  if (S.kids.error) return { full: `<div class="card"><h2>Дети</h2>Календарь не отвечает · <button class="btn btn-secondary sm" data-act="reload">Повторить</button></div>` };
-  const col = { dima: "var(--dima)", danya: "var(--danya)", family: "var(--family)" };
+  const calendarLink = '<a class="btn btn-secondary sm" href="school/" style="text-decoration:none;white-space:nowrap">Календарь</a>';
+  if (S.kids.error) return { full: `<div class="card"><h2>Дети ${calendarLink}</h2>Календарь не отвечает · <button class="btn btn-secondary sm" data-act="reload">Повторить</button></div>` };
   const rows = (arr, empty) => arr.length ? arr.map((r) => `<div class="row ${r.status}">
       <span class="time">${esc(r.time)}</span><span class="tag ${r.child === "family" ? "tag--gray" : ""}" style="${r.child === "danya" ? "background:var(--accent-soft);color:var(--text-accent-2)" : ""}">${esc(r.childName)}</span>
-      <div class="grow"><div class="t-bold">${esc(r.title)}</div><div class="t-text-s t-muted">${esc([r.until, r.place].filter(Boolean).join(" · "))}</div></div>
+      <div class="grow"><div class="t-bold">${esc(r.title)}</div><div class="t-text-s t-muted">${esc([r.until, r.place, r.tentative ? "Уточнить" : ""].filter(Boolean).join(" · "))}</div></div>
       ${r.id ? `<div class="acts"><button class="btn btn-secondary sm" data-act="move" data-id="${esc(r.id)}">Перенести</button><button class="btn btn-secondary sm" data-act="cancel" data-id="${esc(r.id)}">Отменить</button></div>` : ""}</div>`).join("") : `<div class="t-text-s t-muted">${empty}</div>`;
-  const withIds = (arr) => arr.map((r) => Object.assign(r, { id: (S.kids.events.find((e) => e.start === r.start && e.title === r.title) || {}).id }));
-  return { fold: `Дети: ${v.today.length + v.tomorrow.length ? "занятия есть" : "занятий нет"}`, full: `<div class="card"><h2>Дети — сегодня и завтра <button class="btn btn-secondary sm" data-act="add">+ Занятие</button></h2>
+  const withIds = (arr) => arr.map((r) => {
+    const event = S.kids.events.find((e) => e.start === r.start && e.title === r.title && Dash.childOf(e) === r.child);
+    return { ...r, id: event?.occurrence ? null : event?.id, tentative: event?.tentative };
+  });
+  return { fold: `Дети: ${v.today.length + v.tomorrow.length ? "занятия есть" : "занятий нет"}`, full: `<div class="card"><h2>Дети — сегодня и завтра ${calendarLink}</h2>
     <div class="day t-text-xs t-muted">Сегодня</div>${rows(withIds(v.today), "Сегодня без занятий")}
     <div class="day t-text-xs t-muted">Завтра</div>${rows(withIds(v.tomorrow), "Завтра без занятий")}
-    ${S.form ? addForm() : ""}</div>` };
+    ${!S.kids.school ? '<p class="t-text-s t-muted">Раздел «Школа и кружки» недоступен.</p>' : ""}
+    ${S.kids.legacy ? '<button class="btn btn-secondary sm" data-act="add">+ Событие в Google Календарь</button>' : ""}
+    ${S.form && S.kids.legacy ? addForm() : ""}</div>` };
 }
 const rub = (n) => Math.round(n).toLocaleString("ru-RU").replace(/\u00a0/g, " ") + " ₽";
 const MON = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];

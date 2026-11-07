@@ -1,2 +1,5 @@
 [functions.groceries]
 verify_jwt = false
+
+[functions.school]
+verify_jwt = false
