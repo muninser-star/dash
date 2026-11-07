@@ -21,6 +21,16 @@ export function occurs(event, date) {
   return event.weekdays.length ? event.weekdays.includes(weekday(date)) : date === event.date;
 }
 
+export function dayClosure(date, ranges) {
+  const matching = ranges.filter(range => range.date_from <= date && date <= range.date_to);
+  const closed = matching.find(range => range.kind === 'holiday') || matching.find(range => range.kind === 'vacation');
+  if (closed) return { date, kind: closed.kind, label: closed.label };
+  if (weekday(date) > 5 && !matching.some(range => range.kind === 'workday')) {
+    return { date, kind: 'weekend', label: 'Выходной' };
+  }
+  return null;
+}
+
 export function travelClock(time, delta) {
   const value = minutes(time) + delta;
   const day = Math.floor(value / 1440);

@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
-import { addDays, eventInput, normalizeTime, occurs, validDate, validTime } from "../../../school/schedule.mjs";
+import { addDays, dayClosure, eventInput, normalizeTime, occurs, validDate, validTime } from "../../../school/schedule.mjs";
 
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
@@ -40,19 +40,24 @@ function bellInput(row: { lesson: number; start_time: string; end_time: string }
 
 async function list(from: string, to: string) {
   if (!validDate(from) || !validDate(to) || to < from || to > addDays(from, 30)) return fail("invalid_range");
-  const [eventResult, skipResult, bellResult] = await Promise.all([
+  const [eventResult, skipResult, bellResult, closureResult] = await Promise.all([
     db.from("dash_school_events").select("*").lte("date", to).or("until.is.null,until.gte." + from)
       .or("weekdays.neq.{},date.gte." + from).order("start_time").order("id"),
     db.from("dash_school_skips").select("event_id,date").gte("date", from).lte("date", to),
     db.from("dash_school_bells").select("*").order("lesson"),
+    db.from("dash_school_closures").select("date_from,date_to,kind,label").lte("date_from", to).gte("date_to", from).order("date_from"),
   ]);
-  if (eventResult.error || skipResult.error || bellResult.error) throw Error("database_read");
+  if (eventResult.error || skipResult.error || bellResult.error || closureResult.error) throw Error("database_read");
   const rows = eventResult.data.map(normalize);
   const skipped = new Set(skipResult.data.map(row => row.event_id + "/" + row.date));
   const events = [];
+  const closures = [];
   for (let date = from; date <= to; date = addDays(date, 1)) {
+    const closed = dayClosure(date, closureResult.data);
+    if (closed) closures.push(closed);
     for (const row of rows) {
       if (!occurs(row, date) || skipped.has(row.id + "/" + date)) continue;
+      if (closed && row.category === "school") continue;
       events.push({
         ...row, occurrence: date,
         start: date + "T" + row.start_time + ":00+03:00",
@@ -60,7 +65,7 @@ async function list(from: string, to: string) {
       });
     }
   }
-  return ok({ events, bells: bellResult.data.map(normalize) });
+  return ok({ events, bells: bellResult.data.map(normalize), closures });
 }
 
 Deno.serve(async req => {

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { eventInput, loadMinutes, monday, occurs, today, travelClock } from '../school/schedule.mjs';
+import { dayClosure, eventInput, loadMinutes, monday, occurs, today, travelClock } from '../school/schedule.mjs';
 import { parseSchedule } from '../school/import.mjs';
 
 const input = {
@@ -67,4 +67,18 @@ test('bell rows stay separate from lessons scheduled for an actual weekday', () 
 test('common OCR substitutions and trailing punctuation preserve bell times', () => {
   const parsed = parseSchedule('Расписание звонков\nЗ урок 10:30 — 11:10.\n2 урок | 9; ‚30 — 10: 10.', '2026-11-09');
   assert.deepEqual(parsed.bells.map(b => [b.lesson,b.start_time,b.end_time]), [[2,'09:30','10:10'],[3,'10:30','11:10']]);
+});
+
+test('closure ranges include both endpoints, and a transferred working Saturday can open', () => {
+  const ranges = [
+    { kind: 'workday', date_from: '2027-02-20', date_to: '2027-02-20' },
+    { kind: 'holiday', date_from: '2027-02-22', date_to: '2027-02-23', label: 'Праздничный выходной' },
+    { kind: 'vacation', date_from: '2027-02-22', date_to: '2027-02-28', label: 'Каникулы' },
+  ];
+  assert.equal(dayClosure('2027-02-20', ranges), null);
+  assert.equal(dayClosure('2027-02-21', ranges).kind, 'weekend');
+  assert.equal(dayClosure('2027-02-22', ranges).kind, 'holiday');
+  assert.equal(dayClosure('2027-02-23', ranges).kind, 'holiday');
+  assert.equal(dayClosure('2027-02-28', ranges).kind, 'vacation');
+  assert.equal(dayClosure('2027-03-01', ranges), null);
 });

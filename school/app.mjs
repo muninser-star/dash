@@ -19,7 +19,8 @@ if (url.searchParams.has('k')) {
   url.searchParams.delete('k');
   history.replaceState(null, '', url.pathname + url.search + url.hash);
 }
-const state = { day: today(), week: monday(today()), filter: 'all', rows: [], bells: [], available: false, request: 0, editing: null, draftId: null };
+let moscowDay = today();
+const state = { day: moscowDay, week: monday(moscowDay), filter: 'all', rows: [], bells: [], closures: new Map(), available: false, request: 0, editing: null, draftId: null };
 const apiUrl = 'https://cuhplpukqhdfutcymtmv.supabase.co/functions/v1/school';
 const apiKey = 'sb_publishable_ILfqT6mCyHBOu6BVVRxHKQ_0bPQtNi3';
 async function api(action, body = {}) {
@@ -68,6 +69,7 @@ async function load(success = '') {
     remember(key);
     state.rows = result.events;
     state.bells = result.bells;
+    state.closures = new Map((result.closures || []).map(day => [day.date, day]));
     state.available = true;
     $('gate').hidden = $('loading').hidden = true;
     $('calendar').hidden = $('header-actions').hidden = false;
@@ -77,6 +79,7 @@ async function load(success = '') {
     if (request !== state.request) return;
     if (error.message === 'forbidden') { key = null; remember(null); gate(describeError(error)); return; }
     state.rows = [];
+    state.closures.clear();
     state.available = false;
     if (!$('calendar').hidden) {
       $('loading').hidden = true;
@@ -100,36 +103,63 @@ $('gate').addEventListener('submit', event => {
 
 const filtered = date => state.rows.filter(e => e.occurrence === date && (state.filter === 'all' || e.child === state.filter));
 const type = e => e.school_kind ? schoolKinds[e.school_kind] : categories[e.category];
+const weekKind = e => e.school_kind === 'lesson' ? 'lesson' : e.category;
+const weekKinds = { ...categories, lesson: 'Уроки' };
+const dayOffLabels = { holiday: ['Праздник', 'Празд.'], vacation: ['Каникулы', 'Каник.'], weekend: ['Выходной', 'Вых.'] };
 const rowKey = e => e.id + '/' + e.occurrence;
+const childTag = child => '<span class="child-tag child-' + child + '">' + children[child] + '</span>';
 function weekLabel() {
   const end = addDays(state.week, 6);
   if (end.slice(0, 7) === state.week.slice(0, 7)) return Number(state.week.slice(8)) + '–' + formatDate(end);
   const opts = end.slice(0, 4) !== state.week.slice(0, 4) ? { day: 'numeric', month: 'short', year: 'numeric' } : { day: 'numeric', month: 'short' };
   return formatDate(state.week, opts) + ' – ' + formatDate(end, opts);
 }
+function lessonBlock(date, child, lessons) {
+  if (!lessons.length) return '';
+  const start = lessons[0].start_time;
+  const end = lessons.map(e => e.end_time).sort().at(-1);
+  const title = 'Уроки · ' + lessons.length;
+  return '<button type="button" class="week-item lesson" data-day="' + date + '" title="' +
+    esc(children[child] + ' · ' + title + ' · ' + start + '–' + end) + '">' +
+    '<span class="week-item-head"><time>' + start + '–' + end + '</time>' + childTag(child) + '</span>' +
+    '<span class="week-item-title">' + title + '</span></button>';
+}
 function render(available = state.available) {
+  const current = today();
   $('week-title').textContent = weekLabel();
   for (const button of document.querySelectorAll('[data-filter]')) button.setAttribute('aria-pressed', String(button.dataset.filter === state.filter));
   $('week').innerHTML = days.map((label, i) => {
     const date = addDays(state.week, i), events = filtered(date);
-    const kinds = [...new Set(events.map(e => e.category))];
-    const labelFull = fmt(date) + (!available ? ', нет данных' : events.length ? ', событий: ' + events.length + ', ' + kinds.map(kind => categories[kind]).join(', ') : ', без событий');
+    const kinds = [...new Set(events.map(weekKind))];
+    const dayChildren = Object.keys(children).filter(child => events.some(e => e.child === child));
+    const lessons = events.filter(e => weekKind(e) === 'lesson');
+    const otherEvents = events.filter(e => weekKind(e) !== 'lesson');
+    const closed = state.closures.get(date);
+    const details = [...dayChildren.map(child => children[child]), ...kinds.map(kind => weekKinds[kind])];
+    const labelFull = fmt(date) + (closed ? ', ' + closed.label : '') +
+      (!available ? ', нет данных' : events.length ? ', событий: ' + events.length + ', ' + details.join(', ') : ', без событий');
     return '<div class="day-cell' + (date === state.day ? ' active' : '') + '">' +
       '<button type="button" class="day-button" data-day="' + date + '" aria-label="' + esc(labelFull) +
-      '" aria-pressed="' + (date === state.day) + '"' + (date === today() ? ' aria-current="date"' : '') +
-      '><span>' + label + '</span><strong>' + Number(date.slice(8)) + '</strong><small>' + (events.length || '·') + '</small>' +
-      '<span class="markers" aria-hidden="true">' + kinds.map(kind => '<i class="' + kind + '"></i>').join('') + '</span></button>' +
-      events.slice(0, 4).map(e => '<button class="week-item ' + e.category + (e.tentative ? ' tentative' : '') + '" data-event="' + rowKey(e) +
-        '" title="' + esc(children[e.child] + ' · ' + e.title) + '"><time>' + e.start_time + '</time><span><i class="dot ' + e.child +
-        '"></i>' + esc(e.title) + '</span></button>').join('') +
-      (events.length > 4 ? '<button class="week-more" data-day="' + date + '">Ещё ' + (events.length - 4) + '</button>' : '') + '</div>';
+      '" aria-pressed="' + (date === state.day) + '"' + (date === current ? ' aria-current="date"' : '') +
+      '><span>' + label + '</span><strong>' + Number(date.slice(8)) + '</strong>' +
+      (closed ? '<span class="day-off-label" aria-hidden="true"><span>' + dayOffLabels[closed.kind][0] + '</span><span>' + dayOffLabels[closed.kind][1] + '</span></span>' : '') +
+      '<small>' + (events.length || '·') + '</small>' +
+      '<span class="markers" aria-hidden="true">' + kinds.map(kind => '<i class="' + kind + '"></i>').join('') + '</span>' +
+      (state.filter === 'all' && dayChildren.length ? '<span class="day-children" aria-hidden="true">' + dayChildren.map(childTag).join('') + '</span>' : '') + '</button>' +
+      dayChildren.map(child => lessonBlock(date, child, lessons.filter(e => e.child === child))).join('') +
+      otherEvents.slice(0, 4).map(e => '<button type="button" class="week-item ' + e.category + (e.tentative ? ' tentative' : '') + '" data-event="' + rowKey(e) +
+        '" title="' + esc(children[e.child] + ' · ' + e.title) + '"><span class="week-item-head"><time>' + e.start_time + '</time>' + childTag(e.child) +
+        '</span><span class="week-item-title">' + esc(e.title) + '</span></button>').join('') +
+      (otherEvents.length > 4 ? '<button type="button" class="week-more" data-day="' + date + '">Ещё ' + (otherEvents.length - 4) + '</button>' : '') + '</div>';
   }).join('');
   const label = fmt(state.day);
-  $('day-title').textContent = label[0].toUpperCase() + label.slice(1);
+  $('day-title').textContent = state.day === current ? 'Сегодня · ' + label : label[0].toUpperCase() + label.slice(1);
+  const closed = state.closures.get(state.day);
+  message('day-off-note', closed ? closed.label + ' · Школа и сад закрыты.' : '');
   const events = filtered(state.day);
-  $('day-load').innerHTML = Object.entries(children).filter(([id]) => state.filter === 'all' || state.filter === id).map(([id, name]) => {
+  $('day-load').innerHTML = Object.keys(children).filter(id => state.filter === 'all' || state.filter === id).map(id => {
     const own = events.filter(e => e.child === id);
-    return '<span><i class="dot ' + id + '"></i>' + name + ' · ' + (available ? duration(loadMinutes(own)) : 'нет данных') +
+    return '<span class="child-load">' + childTag(id) + ' ' + (available ? duration(loadMinutes(own)) : 'нет данных') +
       (own.some(e => e.tentative) ? ' + уточнить' : '') + '</span>';
   }).join('');
   $('agenda').innerHTML = events.length ? events.map(agendaRow).join('') : '<p class="empty">' +
@@ -142,7 +172,7 @@ function agendaRow(e) {
   const back = e.travel_back == null ? 'Обратно — не указано' : 'Обратно ' + e.travel_back + ' мин · вернуться к <strong>' + travelClock(e.end_time, e.travel_back) + '</strong>';
   const pickup = 'Забрать <strong>' + e.end_time + '</strong>';
   return '<article class="agenda-row"><div class="when">' + e.start_time + '–' + e.end_time + '</div><div><h3 class="event-title">' + esc(e.title) + '</h3>' +
-    '<div class="meta"><span><i class="dot ' + e.child + '"></i>' + children[e.child] + '</span><span class="tag ' + e.category + '">' + type(e) + '</span>' +
+    '<div class="meta">' + childTag(e.child) + '<span class="tag ' + e.category + '">' + type(e) + '</span>' +
     (e.tentative ? '<span class="tag tentative">Уточнить</span>' : '') + '</div>' +
     (e.place ? '<p class="place">' + esc(e.place) + '</p>' : '') +
     '<p class="travel"><span>' + out + '</span><span>' + pickup + '</span><span>' + back + '</span></p>' +
@@ -156,6 +186,7 @@ function go(date) {
   if (state.week === next) { render(); return; }
   state.week = next;
   state.rows = [];
+  state.closures.clear();
   state.available = false;
   render(false);
   message('notice', 'Загружаю неделю…');
@@ -163,14 +194,37 @@ function go(date) {
 }
 $('prev').onclick = () => go(addDays(state.day, -7));
 $('next').onclick = () => go(addDays(state.day, 7));
-$('today').onclick = () => go(today());
+$('today').onclick = () => showAgenda(today());
+$('show-week').onclick = event => {
+  event.preventDefault();
+  const calendar = $('week-calendar');
+  calendar.focus({ preventScroll: true });
+  calendar.scrollIntoView({ block: 'start' });
+};
+function showAgenda(date) {
+  go(date);
+  $('day-title').focus({ preventScroll: true });
+  $('day-title').scrollIntoView({ block: 'start' });
+}
+function refreshToday() {
+  const date = today();
+  if (date === moscowDay) return;
+  const followingToday = state.day === moscowDay;
+  moscowDay = date;
+  if ($('calendar').hidden) {
+    state.day = date;
+    state.week = monday(date);
+    if (key && $('gate').hidden) load();
+  } else if (followingToday) go(date);
+  else render();
+}
+window.addEventListener('focus', refreshToday);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshToday(); });
+setInterval(() => { if (!document.hidden) refreshToday(); }, 60000);
 for (const button of document.querySelectorAll('[data-filter]')) button.onclick = () => { state.filter = button.dataset.filter; render(); };
 $('calendar').addEventListener('click', event => {
   const button = event.target.closest('button');
-  if (button?.dataset.day) {
-    go(button.dataset.day);
-    document.querySelector('.day-button[data-day="' + button.dataset.day + '"]')?.focus();
-  }
+  if (button?.dataset.day) showAgenda(button.dataset.day);
   if (button?.dataset.event) {
     const row = state.rows.find(e => rowKey(e) === button.dataset.event);
     if (!row) return;

@@ -9,8 +9,8 @@
   <meta name="theme-color" content="#f3f5f7">
   <title>Школа и кружки · Семейный дашборд</title>
   <link rel="stylesheet" href="../токены.css">
-  <link rel="stylesheet" href="style.css">
-  <script type="module" src="app.mjs"></script>
+  <link rel="stylesheet" href="style.css?v=2">
+  <script type="module" src="app.mjs?v=2"></script>
 </head>
 <body>
   <main class="shell">
@@ -34,36 +34,40 @@
     <p id="loading" class="panel notice" role="status">Открываю календарь…</p>
     <div id="calendar" hidden>
       <div id="notice" class="notice" role="status" hidden></div>
-      <section class="panel calendar" aria-label="Календарь на неделю">
-        <div class="toolbar">
-          <div class="filters" aria-label="Расписание ребёнка">
-            <button type="button" data-filter="all" aria-pressed="true">Все события</button>
-            <button type="button" data-filter="dima" aria-pressed="false"><i class="dot dima"></i>Дима</button>
-            <button type="button" data-filter="danya" aria-pressed="false"><i class="dot danya"></i>Даня</button>
-          </div>
+      <div class="toolbar">
+        <div class="filters" role="group" aria-label="Расписание ребёнка">
+          <button type="button" data-filter="all" aria-pressed="true">Все события</button>
+          <button type="button" class="child-filter child-dima" data-filter="dima" aria-pressed="false">Дима</button>
+          <button type="button" class="child-filter child-danya" data-filter="danya" aria-pressed="false">Даня</button>
+        </div>
+        <div class="toolbar-links">
           <span class="timezone">Московское время</span>
+          <a class="week-link" id="show-week" href="#week-calendar">Неделя</a>
         </div>
-        <div class="week-nav">
-          <h2 id="week-title"></h2>
-          <div class="actions">
-            <button type="button" id="prev" class="arrow" aria-label="Предыдущая неделя"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button>
-            <button type="button" id="today">Сегодня</button>
-            <button type="button" id="next" class="arrow" aria-label="Следующая неделя"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></button>
-          </div>
-        </div>
-        <div id="week" class="week" aria-label="Дни недели"></div>
-        <div class="legend"><span class="school">Школа / сад</span><span class="club">Кружки</span><span class="other">Прочее</span></div>
-      </section>
-      <div class="below">
+      </div>
+      <div class="schedule-layout">
         <section class="panel agenda" aria-labelledby="day-title">
           <header class="agenda-head">
             <div>
-              <h2 id="day-title"></h2>
+              <h2 id="day-title" tabindex="-1"></h2>
               <div id="day-load" class="load"></div>
             </div>
             <button type="button" id="day-add" aria-label="Добавить событие на выбранный день">+ Добавить</button>
           </header>
+          <p id="day-off-note" class="day-off-note" hidden></p>
           <div id="agenda"></div>
+        </section>
+        <section class="panel calendar" id="week-calendar" aria-label="Календарь на неделю" tabindex="-1">
+          <div class="week-nav">
+            <h2 id="week-title"></h2>
+            <div class="actions">
+              <button type="button" id="prev" class="arrow" aria-label="Предыдущая неделя"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button>
+              <button type="button" id="today">Сегодня</button>
+              <button type="button" id="next" class="arrow" aria-label="Следующая неделя"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></button>
+            </div>
+          </div>
+          <div id="week" class="week" aria-label="Дни недели"></div>
+          <div class="legend"><span class="lesson">Уроки</span><span class="school">Школа / сад</span><span class="club">Кружки</span><span class="other">Прочее</span></div>
         </section>
         <aside class="panel bells" aria-labelledby="bells-title">
           <h2 id="bells-title">Звонки в школе</h2>
