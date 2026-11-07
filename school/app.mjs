@@ -1,5 +1,5 @@
-import { addDays, categories, children, days, eventInput, formatDate, loadMinutes, minutes,
-  monday, schoolKinds, today, travelClock, validDate, validTime, weekday } from './schedule.mjs';
+import { addDays, categories, children, days, departureTime, eventInput, formatDate, loadMinutes, minutes,
+  monday, schoolKinds, timeOf, timelineLanes, today, travelClock, validDate, validTime, weekday } from './schedule.mjs';
 import { parseSchedule } from './import.mjs';
 
 const $ = id => document.getElementById(id);
@@ -20,7 +20,7 @@ if (url.searchParams.has('k')) {
   history.replaceState(null, '', url.pathname + url.search + url.hash);
 }
 let moscowDay = today();
-const state = { day: moscowDay, week: monday(moscowDay), filter: 'all', rows: [], bells: [], closures: new Map(), available: false, request: 0, editing: null, draftId: null };
+const state = { day: moscowDay, week: monday(moscowDay), filter: 'all', rows: [], bells: [], closures: new Map(), routes: new Map(), available: false, request: 0, editing: null, draftId: null };
 const apiUrl = 'https://cuhplpukqhdfutcymtmv.supabase.co/functions/v1/school';
 const apiKey = 'sb_publishable_ILfqT6mCyHBOu6BVVRxHKQ_0bPQtNi3';
 async function api(action, body = {}) {
@@ -70,6 +70,7 @@ async function load(success = '') {
     state.rows = result.events;
     state.bells = result.bells;
     state.closures = new Map((result.closures || []).map(day => [day.date, day]));
+    state.routes = new Map((result.routes || []).map(route => [route.id, route]));
     state.available = true;
     $('gate').hidden = $('loading').hidden = true;
     $('calendar').hidden = $('header-actions').hidden = false;
@@ -105,58 +106,122 @@ const filtered = date => state.rows.filter(e => e.occurrence === date && (state.
 const type = e => e.school_kind ? schoolKinds[e.school_kind] : categories[e.category];
 const weekKind = e => e.school_kind === 'lesson' ? 'lesson' : e.category;
 const weekKinds = { ...categories, lesson: 'Уроки' };
-const dayOffLabels = { holiday: ['Праздник', 'Празд.'], vacation: ['Каникулы', 'Каник.'], weekend: ['Выходной', 'Вых.'] };
+const dayOffLabels = { holiday: 'Праздник', vacation: 'Каникулы', weekend: 'Выходной' };
 const rowKey = e => e.id + '/' + e.occurrence;
 const childTag = child => '<span class="child-tag child-' + child + '">' + children[child] + '</span>';
+const routeFor = e => state.routes.get(e.route_id);
+const walkTime = route => '≈ ' + route.minutes + ' мин';
+const schoolDayEvent = e => e.category === 'school' && e.school_kind !== 'kindergarten';
+const leaveAt = (e, travel) => e.departure_time || departureTime(e.start_time, travel);
+const hourHeight = 96, minimumCardHeight = 48, axisWidth = 48;
 function weekLabel() {
   const end = addDays(state.week, 6);
   if (end.slice(0, 7) === state.week.slice(0, 7)) return Number(state.week.slice(8)) + '–' + formatDate(end);
   const opts = end.slice(0, 4) !== state.week.slice(0, 4) ? { day: 'numeric', month: 'short', year: 'numeric' } : { day: 'numeric', month: 'short' };
   return formatDate(state.week, opts) + ' – ' + formatDate(end, opts);
 }
-function lessonBlock(date, child, lessons) {
-  if (!lessons.length) return '';
-  const start = lessons[0].start_time;
-  const end = lessons.map(e => e.end_time).sort().at(-1);
-  const title = 'Уроки · ' + lessons.length;
-  return '<button type="button" class="week-item lesson" data-day="' + date + '" title="' +
-    esc(children[child] + ' · ' + title + ' · ' + start + '–' + end) + '">' +
-    '<span class="week-item-head"><time>' + start + '–' + end + '</time>' + childTag(child) + '</span>' +
-    '<span class="week-item-title">' + title + '</span></button>';
+function weekEvent(e, shownSchoolWalks) {
+  const route = routeFor(e);
+  const schoolWalk = route && e.school_kind === 'lesson' ? e.child + '/' + route.id : '';
+  const showWalk = route && !shownSchoolWalks.has(schoolWalk);
+  if (schoolWalk) shownSchoolWalks.add(schoolWalk);
+  const length = minutes(e.end_time) - minutes(e.start_time);
+  const elapsed = e.category === 'school' ? '' : '<span class="week-duration">' + length + ' мин</span>';
+  return '<button type="button" class="week-item ' + weekKind(e) + (e.tentative ? ' tentative' : '') + '" data-event="' + rowKey(e) +
+    '" title="' + esc(children[e.child] + ' · ' + e.title) + '"><span class="week-item-head"><time>' + e.start_time +
+    '</time>' + elapsed + '</span><span class="week-item-title">' + esc(e.title) +
+    '</span><span class="week-item-meta">' + childTag(e.child) +
+    (showWalk ? '<span class="week-walk" role="img" title="Пешком от дома" aria-label="Пешком от дома ' + walkTime(route) + '">' +
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13" cy="5" r="2"/><path d="m7 21 4-6-1-4m8 10-4-5 1-6m-8 3 4-5 4 2 4 3"/></svg>' +
+      walkTime(route) + '</span>' : '') + '</span></button>';
+}
+function schoolPlan(events) {
+  const school = new Map();
+  for (const e of events) {
+    if (!schoolDayEvent(e)) continue;
+    if (!school.has(e.child)) school.set(e.child, { first: e, last: e, route: routeFor(e) });
+    const block = school.get(e.child);
+    if (e.end_time >= block.last.end_time) block.last = e;
+    block.route ||= routeFor(e);
+  }
+  $('school-walk').hidden = !school.size;
+  $('school-walk').innerHTML = [...school.values()].map(({ first, last, route }) => {
+    const travel = first.travel_out ?? route?.minutes;
+    const leave = travel == null ? '' : '<span>Выйти из дома <strong>' + leaveAt(first, travel) + '</strong></span>';
+    const endLabel = last.school_kind === 'lesson' ? 'Уроки до' : 'Забрать';
+    return '<p>' + childTag(first.child) + leave + '<span>' + endLabel + ' <strong>' + last.end_time + '</strong></span></p>';
+  }).join('');
+}
+function renderRoutes() {
+  $('walking').hidden = !state.routes.size;
+  $('walking-routes').innerHTML = [...state.routes.values()].map(route =>
+    '<li><div><strong>' + esc(route.label) + '</strong><span>' + esc(route.place) + '</span></div><div class="walk-value"><strong>' +
+    walkTime(route) + '</strong><span>' + route.meters.toLocaleString('ru-RU') + ' м</span></div></li>').join('');
+}
+function renderWeek(current, available) {
+  const daily = days.map((label, i) => {
+    const date = addDays(state.week, i);
+    return { label, date, events: filtered(date) };
+  });
+  const weekEvents = daily.flatMap(day => day.events);
+  const fromHour = Math.floor(Math.min(8 * 60, ...weekEvents.map(e => minutes(e.start_time))) / 60);
+  const toHour = Math.ceil(Math.max(20 * 60, ...weekEvents.map(e => minutes(e.end_time))) / 60);
+  const columns = daily.map(day => timelineLanes(day.events, fromHour * 60, hourHeight, minimumCardHeight));
+  const trackHeight = Math.max((toHour - fromHour) * hourHeight, ...columns.flat().map(item => item.top + item.height));
+  const widths = columns.map(items => Math.max(130, ...items.map(item => item.lanes * 102)));
+  const hours = Array.from({ length: toHour - fromHour + 1 }, (_, i) => '<span>' + timeOf((fromHour + i) * 60) + '</span>').join('');
+  const week = $('week');
+  week.style.setProperty('--hour-height', hourHeight + 'px');
+  week.style.setProperty('--track-height', trackHeight + 'px');
+  week.style.minWidth = axisWidth + widths.reduce((a, b) => a + b, 0) + 'px';
+  week.style.gridTemplateColumns = axisWidth + 'px ' + widths.map(width => 'minmax(' + width + 'px, 1fr)').join(' ');
+  week.innerHTML = '<div class="time-axis" aria-hidden="true"><div class="time-axis-head">Время</div><div class="hour-labels">' + hours + '</div></div>' +
+    daily.map(({ label, date, events }) => {
+    const shownSchoolWalks = new Set();
+    const kinds = [...new Set(events.map(weekKind))];
+    const dayChildren = Object.keys(children).filter(child => events.some(e => e.child === child));
+    const closed = state.closures.get(date);
+    const details = [...dayChildren.map(child => children[child]), ...kinds.map(kind => weekKinds[kind])];
+    const labelFull = fmt(date) + (closed ? ', ' + closed.label : '') +
+      (!available ? ', нет данных' : events.length ? ', событий: ' + events.length + ', ' + details.join(', ') : ', без событий');
+    const special = closed && closed.kind !== 'weekend';
+    return '<div class="day-cell' + (date === state.day ? ' active' : '') + (special ? ' special-day' : '') + '">' +
+      '<button type="button" class="day-button" data-day="' + date + '" aria-label="' + esc(labelFull) +
+      '" aria-pressed="' + (date === state.day) + '"' + (date === current ? ' aria-current="date"' : '') +
+      '><span>' + label + '</span><strong>' + Number(date.slice(8)) + '</strong>' +
+      (closed ? '<span class="day-off-label" aria-hidden="true">' + dayOffLabels[closed.kind] + '</span>' : '') + '</button>' +
+      '<div class="day-track">' + events.map(e => weekEvent(e, shownSchoolWalks)).join('') + '</div></div>';
+  }).join('');
+  for (const [i, track] of [...week.querySelectorAll('.day-track')].entries()) {
+    for (const [j, card] of [...track.children].entries()) {
+      const item = columns[i][j], portion = 100 / item.lanes;
+      card.style.top = item.top + 'px';
+      card.style.height = item.height + 'px';
+      card.style.left = 'calc(' + item.lane * portion + '% + 3px)';
+      card.style.width = 'calc(' + portion + '% - 6px)';
+      if (item.lanes > 1) card.classList.add('week-item-overlap');
+    }
+  }
+  const scroll = $('week-scroll');
+  if (scroll.dataset.alignedDay !== state.day) {
+    scroll.dataset.alignedDay = state.day;
+    requestAnimationFrame(() => {
+      const active = week.querySelector('.day-cell.active');
+      if (active) scroll.scrollLeft = active.offsetLeft - axisWidth;
+    });
+  }
 }
 function render(available = state.available) {
   const current = today();
   $('week-title').textContent = weekLabel();
   for (const button of document.querySelectorAll('[data-filter]')) button.setAttribute('aria-pressed', String(button.dataset.filter === state.filter));
-  $('week').innerHTML = days.map((label, i) => {
-    const date = addDays(state.week, i), events = filtered(date);
-    const kinds = [...new Set(events.map(weekKind))];
-    const dayChildren = Object.keys(children).filter(child => events.some(e => e.child === child));
-    const lessons = events.filter(e => weekKind(e) === 'lesson');
-    const otherEvents = events.filter(e => weekKind(e) !== 'lesson');
-    const closed = state.closures.get(date);
-    const details = [...dayChildren.map(child => children[child]), ...kinds.map(kind => weekKinds[kind])];
-    const labelFull = fmt(date) + (closed ? ', ' + closed.label : '') +
-      (!available ? ', нет данных' : events.length ? ', событий: ' + events.length + ', ' + details.join(', ') : ', без событий');
-    return '<div class="day-cell' + (date === state.day ? ' active' : '') + '">' +
-      '<button type="button" class="day-button" data-day="' + date + '" aria-label="' + esc(labelFull) +
-      '" aria-pressed="' + (date === state.day) + '"' + (date === current ? ' aria-current="date"' : '') +
-      '><span>' + label + '</span><strong>' + Number(date.slice(8)) + '</strong>' +
-      (closed ? '<span class="day-off-label" aria-hidden="true"><span>' + dayOffLabels[closed.kind][0] + '</span><span>' + dayOffLabels[closed.kind][1] + '</span></span>' : '') +
-      '<small>' + (events.length || '·') + '</small>' +
-      '<span class="markers" aria-hidden="true">' + kinds.map(kind => '<i class="' + kind + '"></i>').join('') + '</span>' +
-      (state.filter === 'all' && dayChildren.length ? '<span class="day-children" aria-hidden="true">' + dayChildren.map(childTag).join('') + '</span>' : '') + '</button>' +
-      dayChildren.map(child => lessonBlock(date, child, lessons.filter(e => e.child === child))).join('') +
-      otherEvents.slice(0, 4).map(e => '<button type="button" class="week-item ' + e.category + (e.tentative ? ' tentative' : '') + '" data-event="' + rowKey(e) +
-        '" title="' + esc(children[e.child] + ' · ' + e.title) + '"><span class="week-item-head"><time>' + e.start_time + '</time>' + childTag(e.child) +
-        '</span><span class="week-item-title">' + esc(e.title) + '</span></button>').join('') +
-      (otherEvents.length > 4 ? '<button type="button" class="week-more" data-day="' + date + '">Ещё ' + (otherEvents.length - 4) + '</button>' : '') + '</div>';
-  }).join('');
+  renderWeek(current, available);
   const label = fmt(state.day);
   $('day-title').textContent = state.day === current ? 'Сегодня · ' + label : label[0].toUpperCase() + label.slice(1);
   const closed = state.closures.get(state.day);
-  message('day-off-note', closed ? closed.label + ' · Школа и сад закрыты.' : '');
+  message('day-off-note', closed ? closed.label + ' · Без школы и сада' : '');
   const events = filtered(state.day);
+  schoolPlan(events);
   $('day-load').innerHTML = Object.keys(children).filter(id => state.filter === 'all' || state.filter === id).map(id => {
     const own = events.filter(e => e.child === id);
     return '<span class="child-load">' + childTag(id) + ' ' + (available ? duration(loadMinutes(own)) : 'нет данных') +
@@ -166,18 +231,28 @@ function render(available = state.available) {
     (available ? 'На этот день ничего не запланировано.' : 'Расписание на неделю недоступно. Перезагрузите страницу, чтобы повторить.') + '</p>';
   $('bells').innerHTML = state.bells.length ? '<ol>' + state.bells.map(b => '<li><span>' + b.lesson + '-й урок</span><time>' + b.start_time + '–' + b.end_time + '</time></li>').join('') +
     '</ol>' : '<p>Загрузите звонки через импорт.</p>';
+  renderRoutes();
 }
 function agendaRow(e) {
-  const out = e.travel_out == null ? 'Туда — не указано' : 'Туда ' + e.travel_out + ' мин · выйти <strong>' + travelClock(e.start_time, -e.travel_out) + '</strong>';
-  const back = e.travel_back == null ? 'Обратно — не указано' : 'Обратно ' + e.travel_back + ' мин · вернуться к <strong>' + travelClock(e.end_time, e.travel_back) + '</strong>';
-  const pickup = 'Забрать <strong>' + e.end_time + '</strong>';
-  return '<article class="agenda-row"><div class="when">' + e.start_time + '–' + e.end_time + '</div><div><h3 class="event-title">' + esc(e.title) + '</h3>' +
+  const route = routeFor(e);
+  const school = schoolDayEvent(e);
+  const there = e.travel_out ?? route?.minutes;
+  const home = e.travel_back ?? route?.minutes;
+  const trip = [];
+  if (!school) {
+    if (there != null) trip.push('Выйти из дома <strong>' + leaveAt(e, there) + '</strong>');
+    if ((e.category === 'club' && (there != null || home != null)) || e.school_kind === 'kindergarten') trip.push('Забрать <strong>' + e.end_time + '</strong>');
+    if (home != null) trip.push('Дома около <strong>' + travelClock(e.end_time, home) + '</strong>');
+  }
+  const place = e.place || (!school && route?.place);
+  return '<article class="agenda-row' + (school ? ' academic-row' : '') + '"><div class="when">' + e.start_time + '–' + e.end_time + '</div><div><h3 class="event-title">' + esc(e.title) + '</h3>' +
     '<div class="meta">' + childTag(e.child) + '<span class="tag ' + e.category + '">' + type(e) + '</span>' +
     (e.tentative ? '<span class="tag tentative">Уточнить</span>' : '') + '</div>' +
-    (e.place ? '<p class="place">' + esc(e.place) + '</p>' : '') +
-    '<p class="travel"><span>' + out + '</span><span>' + pickup + '</span><span>' + back + '</span></p>' +
+    (place ? '<p class="place">' + esc(place) + '</p>' : '') +
+    (trip.length ? '<p class="travel"><span>' + trip.join('</span><span>') + '</span></p>' : '') +
     (e.note ? '<p class="event-note">' + esc(e.note) + '</p>' : '') +
-    '</div><button type="button" data-event="' + rowKey(e) + '" aria-label="Изменить: ' + esc(e.title) + '">Изменить</button></article>';
+    '</div><button type="button" class="event-edit" data-event="' + rowKey(e) + '" aria-label="Изменить: ' + esc(e.title) +
+    '" title="Изменить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 4 4 4M4 20l4-.8L21 6.2 17.8 3 4.8 16z"/></svg></button></article>';
 }
 function go(date) {
   if (!validDate(date)) return;
@@ -194,16 +269,17 @@ function go(date) {
 }
 $('prev').onclick = () => go(addDays(state.day, -7));
 $('next').onclick = () => go(addDays(state.day, 7));
-$('today').onclick = () => showAgenda(today());
+$('today').onclick = event => showAgenda(today(), event.detail === 0);
 $('show-week').onclick = event => {
+  if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
   event.preventDefault();
   const calendar = $('week-calendar');
-  calendar.focus({ preventScroll: true });
+  if (event.detail === 0) calendar.focus({ preventScroll: true });
   calendar.scrollIntoView({ block: 'start' });
 };
-function showAgenda(date) {
+function showAgenda(date, focus) {
   go(date);
-  $('day-title').focus({ preventScroll: true });
+  if (focus) $('day-title').focus({ preventScroll: true });
   $('day-title').scrollIntoView({ block: 'start' });
 }
 function refreshToday() {
@@ -224,7 +300,7 @@ setInterval(() => { if (!document.hidden) refreshToday(); }, 60000);
 for (const button of document.querySelectorAll('[data-filter]')) button.onclick = () => { state.filter = button.dataset.filter; render(); };
 $('calendar').addEventListener('click', event => {
   const button = event.target.closest('button');
-  if (button?.dataset.day) showAgenda(button.dataset.day);
+  if (button?.dataset.day) showAgenda(button.dataset.day, event.detail === 0);
   if (button?.dataset.event) {
     const row = state.rows.find(e => rowKey(e) === button.dataset.event);
     if (!row) return;
@@ -243,16 +319,23 @@ function eventFields() {
   $('event-date-label').querySelector('span').textContent = ef('repeat').checked ? 'Повторять с' : 'Дата';
   ef('until').disabled = !ef('repeat').checked;
 }
+function routePlaceholders() {
+  const route = state.routes.get(ef('route_id').value);
+  for (const name of ['travel_out', 'travel_back']) ef(name).placeholder = route ? walkTime(route) : 'Указать';
+}
 function openEvent(row = null) {
   state.editing = row;
   state.draftId = crypto.randomUUID();
   form.reset();
   ef('lesson').innerHTML = '<option value="">Время вручную</option>' +
     Array.from({ length: 12 }, (_, i) => option(String(i + 1), (i + 1) + '-й урок', '')).join('');
+  $('route-field').hidden = !state.routes.size;
+  ef('route_id').innerHTML = '<option value="">Указать минуты вручную</option>' +
+    [...state.routes.values()].map(route => option(route.id, route.label + ' · ' + walkTime(route), '')).join('');
   ef('child').value = state.filter === 'all' ? 'dima' : state.filter;
   ef('category').value = 'club';
   ef('date').value = state.day;
-  if (row) for (const name of ['title', 'child', 'category', 'school_kind', 'lesson', 'date', 'until', 'start_time', 'end_time', 'place', 'note', 'travel_out', 'travel_back']) {
+  if (row) for (const name of ['title', 'child', 'category', 'school_kind', 'lesson', 'date', 'until', 'start_time', 'end_time', 'place', 'note', 'travel_out', 'travel_back', 'route_id']) {
     if (row[name] != null) ef(name).value = row[name];
   }
   ef('tentative').checked = !!row?.tentative;
@@ -265,10 +348,12 @@ function openEvent(row = null) {
   $('delete').textContent = row?.weekdays.length ? 'Удалить серию' : 'Удалить';
   message('edit-message', '');
   eventFields();
+  routePlaceholders();
   $('edit').showModal();
 }
-$('add').onclick = $('day-add').onclick = () => openEvent();
+$('day-add').onclick = () => openEvent();
 ef('repeat').onchange = ef('category').onchange = ef('school_kind').onchange = eventFields;
+ef('route_id').onchange = routePlaceholders;
 ef('lesson').onchange = () => {
   const bell = state.bells.find(b => b.lesson === Number(ef('lesson').value));
   if (bell) { ef('start_time').value = bell.start_time; ef('end_time').value = bell.end_time; }

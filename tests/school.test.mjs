@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { dayClosure, eventInput, loadMinutes, monday, occurs, today, travelClock } from '../school/schedule.mjs';
+import { dayClosure, departureTime, eventInput, loadMinutes, monday, occurs, timelineLanes, today, travelClock } from '../school/schedule.mjs';
 import { parseSchedule } from '../school/import.mjs';
 
 const input = {
@@ -35,8 +35,14 @@ test('validates calendar dates, elapsed time, repeat range and road duration', (
   assert.throws(() => eventInput({ ...input, weekdays: [], until: '2026-12-01' }));
   assert.throws(() => eventInput({ ...input, travel_out: 361 }));
   assert.equal(eventInput({ ...input, travel_out: 0 }).travel_out, 0);
+  assert.equal(eventInput({ ...input, route_id: 'school' }).route_id, 'school');
+  assert.equal(eventInput({ ...input, route_id: '' }).route_id, null);
+  assert.equal(Object.hasOwn(eventInput(input), 'route_id'), false);
+  assert.throws(() => eventInput({ ...input, route_id: '!bad' }));
   assert.equal(travelClock('00:10', -20), '23:50 накануне');
   assert.equal(travelClock('23:50', 20), '00:10 на следующий день');
+  assert.equal(departureTime('09:00', 7), '08:48');
+  assert.equal(departureTime('00:10', 7), '23:58 накануне');
 });
 
 test('text import preserves child, weekday, date, duration and type', () => {
@@ -77,8 +83,21 @@ test('closure ranges include both endpoints, and a transferred working Saturday 
   ];
   assert.equal(dayClosure('2027-02-20', ranges), null);
   assert.equal(dayClosure('2027-02-21', ranges).kind, 'weekend');
-  assert.equal(dayClosure('2027-02-22', ranges).kind, 'holiday');
-  assert.equal(dayClosure('2027-02-23', ranges).kind, 'holiday');
+  assert.equal(dayClosure('2027-02-22', ranges).kind, 'vacation');
+  assert.equal(dayClosure('2027-02-23', ranges.filter(r => r.kind !== 'vacation')).kind, 'holiday');
   assert.equal(dayClosure('2027-02-28', ranges).kind, 'vacation');
   assert.equal(dayClosure('2027-03-01', ranges), null);
+});
+
+test('week cards line up with hour labels and overlapping activities get separate lanes', () => {
+  const events = [
+    { start_time: '08:30', end_time: '09:05' },
+    { start_time: '16:00', end_time: '16:30' },
+    { start_time: '16:15', end_time: '17:00' },
+    { start_time: '17:00', end_time: '18:00' },
+  ];
+  const placed = timelineLanes(events, 480, 96, 48);
+  assert.deepEqual(placed.map(e => [e.top,e.height,e.lane,e.lanes]), [
+    [48,56,0,1], [768,48,0,2], [792,72,1,2], [864,96,0,1],
+  ]);
 });

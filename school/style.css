@@ -4,6 +4,7 @@
   --club-bg: #e7f4ea; --club-ink: #206042;
   --other-bg: #f9ecdf; --other-ink: #81461d;
   --lesson-bg: #e9edf1; --lesson-ink: #424f5c;
+  --special-day-bg: #fff0f5; --special-day-ink: #842b53;
   --dima-bg: #dbe8ff; --dima-ink: #183d72;
   --danya-bg: #f6dcea; --danya-ink: #72254d;
   --line: #dfe5eb;
@@ -13,6 +14,7 @@
   :root {
     --dima-bg: #223d5e; --dima-ink: #c2ddff;
     --danya-bg: #4b2b40; --danya-ink: #f7cae2;
+    --special-day-bg: #392635; --special-day-ink: #f4c2dc;
     --line: #34424f; --link-ink: #8dcbff; --message-ink: #ffc2a1; --field-line: #617486;
   }
 }
@@ -31,9 +33,9 @@ svg { width: 18px; height: 18px; vertical-align: middle; }
 .shell { max-width: 1200px; margin: auto; padding: 26px 24px 48px; }
 .back { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; text-decoration: none; }
 .back:hover { text-decoration: underline; }
-.heading { display: flex; justify-content: space-between; align-items: end; gap: 18px; margin: 26px 0 24px; }
+.heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin: 20px 0 18px; }
 h1, h2, h3, p { margin: 0; }
-h1 { font-size: clamp(31px, 5vw, 50px); line-height: 1.08; letter-spacing: -.035em; }
+h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.08; letter-spacing: -.035em; }
 h2 { font-size: 21px; line-height: 1.2; letter-spacing: -.02em; }
 .heading p, .bells p, .hint { color: var(--text-secondary); }
 .heading p { margin-top: 9px; }
@@ -57,23 +59,35 @@ h2 { font-size: 21px; line-height: 1.2; letter-spacing: -.02em; }
 .week-nav { padding: 15px 18px; }
 .arrow { min-width: 42px; padding-inline: 8px; }
 .arrow svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-block: 1px solid var(--line); }
-.day-cell { min-width: 0; min-height: 154px; padding: 0 7px 8px; }
+.week-scroll { overflow-x: auto; border-block: 1px solid var(--line); scrollbar-width: thin; }
+.week { position: relative; display: grid; --day-head-height: 54px; }
+.time-axis { position: sticky; left: 0; z-index: 1; background: var(--card); border-right: 1px solid var(--line); color: var(--text-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
+.time-axis-head { height: var(--day-head-height); display: grid; align-items: center; padding-inline: 5px; }
+.hour-labels { position: relative; height: var(--track-height); border-top: 1px solid var(--line); }
+.hour-labels span { display: block; height: var(--hour-height); padding: 2px 5px 0; }
+.hour-labels span:last-child { height: 16px; padding-top: 0; transform: translateY(-100%); }
+.day-cell { min-width: 0; }
 .day-cell + .day-cell { border-left: 1px solid var(--line); }
 .day-cell.active { background: color-mix(in srgb, var(--accent-soft) 64%, var(--card)); }
-.day-button { width: 100%; text-align: left; background: transparent; border: 0; border-radius: 6px; padding: 8px 5px; }
+.day-cell.special-day { background: var(--special-day-bg); }
+.day-cell.special-day.active { box-shadow: inset 0 0 0 1px var(--special-day-ink); }
+.day-button { width: 100%; height: var(--day-head-height); text-align: left; background: transparent; border: 0; border-radius: 0; padding: 5px 8px; }
 .day-button strong { margin-left: 5px; font-size: 17px; }
 .day-button[aria-current=date] strong { color: var(--link-ink); text-decoration: underline; text-underline-offset: 4px; }
-.day-button small, .day-button .markers, .day-children { display: none; }
 .day-off-label { display: block; color: var(--message-ink); font-size: 11px; font-weight: 600; margin-top: 2px; }
-.day-off-label span:last-child { display: none; }
-.week-item { display: block; text-align: left; border-radius: 8px; width: 100%; border: 1px solid transparent; padding: 5px 7px; margin-bottom: 4px; min-height: 37px; font-size: 12px; overflow: hidden; }
+.special-day .day-off-label { color: var(--special-day-ink); }
+.day-track { position: relative; height: var(--track-height); border-bottom: 1px solid var(--line); background-image: repeating-linear-gradient(to bottom, var(--line) 0 1px, transparent 1px var(--hour-height)); }
+.week-item { position: absolute; display: grid; align-content: start; text-align: left; border-radius: 7px; min-width: 0; min-height: 0; border: 1px solid transparent; padding: 2px 5px; font-size: 12px; line-height: 1.2; overflow: hidden; }
 .week-item:hover { border-color: currentColor; background: var(--item-bg); }
 .week-item-head { display: flex; align-items: center; justify-content: space-between; gap: 2px 4px; flex-wrap: wrap; }
 .week-item-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.week-item time { font-size: 11px; font-weight: 500; }
+.week-item time { font-size: 10px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.week-duration { margin-left: auto; font-size: 10px; font-weight: 600; white-space: nowrap; }
+.week-item-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 4px; margin-top: 2px; }
 .week-item .child-tag { padding: 1px 4px; font-size: 10px; }
-.week-more { font-size: 12px; min-height: 36px; width: 100%; border: 0; background: transparent; color: var(--text-secondary); }
+.week-walk { display: inline-flex; align-items: center; gap: 2px; border-radius: 4px; padding: 0 3px; background: #ffffff99; color: #4a5967; font-size: 10px; line-height: 1.4; white-space: nowrap; }
+.week-walk svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.week-item-overlap .week-walk svg { display: none; }
 .school { --item-bg: var(--school-bg); color: var(--school-ink); background: var(--item-bg); }
 .club { --item-bg: var(--club-bg); color: var(--club-ink); background: var(--item-bg); }
 .other { --item-bg: var(--other-bg); color: var(--other-ink); background: var(--item-bg); }
@@ -81,15 +95,22 @@ h2 { font-size: 21px; line-height: 1.2; letter-spacing: -.02em; }
 .legend span, .tag { border-radius: 6px; padding: 3px 7px; font-size: 12px; font-weight: 600; }
 .schedule-layout { display: grid; grid-template-areas: "agenda bells" "week week"; grid-template-columns: minmax(0, 1fr) minmax(245px, .4fr); gap: 16px; align-items: start; }
 .agenda { grid-area: agenda; }
-.bells { grid-area: bells; }
+.reference { grid-area: bells; display: grid; gap: 16px; min-width: 0; }
 .calendar { grid-area: week; }
 #week-calendar, #day-title { scroll-margin-top: 16px; }
-.agenda, .bells { padding: 18px; }
+.agenda, .bells, .walking { padding: 18px; }
 .agenda-head { align-items: start; margin-bottom: 14px; }
 .day-off-note { border-radius: var(--r-s); background: var(--warning-soft); color: var(--message-ink); padding: 8px 10px; margin-bottom: 12px; font-size: 13px; }
+.school-walk { border-radius: var(--r-s); background: var(--surface-1); padding: 8px 10px; margin-bottom: 12px; color: var(--text-paragraph); font-size: 13px; }
+.school-walk p { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.school-walk p + p { margin-top: 4px; }
 .load { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 7px; color: var(--text-secondary); font-size: 13px; }
 .child-load { display: inline-flex; align-items: center; gap: 6px; }
-.agenda-row { display: grid; grid-template-columns: minmax(102px, auto) minmax(0, 1fr) auto; align-items: start; gap: 12px; padding: 14px 0; border-top: 1px solid var(--line); }
+.agenda-row { display: grid; grid-template-columns: minmax(102px, auto) minmax(0, 1fr) auto; align-items: start; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line); }
+.academic-row { padding-block: 8px; }
+.event-edit { display: inline-grid; place-items: center; width: 36px; min-height: 36px; padding: 7px; border-color: transparent; color: var(--link-ink); }
+.event-edit:hover { border-color: var(--line); }
+.event-edit svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .when { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .event-title { font-size: 17px; font-weight: 700; overflow-wrap: anywhere; }
 .meta, .travel { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 5px; font-size: 13px; }
@@ -97,11 +118,19 @@ h2 { font-size: 21px; line-height: 1.2; letter-spacing: -.02em; }
 .tentative { --item-bg: #fff6e9; border: 1px dashed #92612e; color: #734517; background: var(--item-bg); }
 .week .lesson, .legend .lesson { --item-bg: var(--lesson-bg); color: var(--lesson-ink); background: var(--item-bg); }
 .travel { gap: 2px 12px; color: var(--text-paragraph); }
+.travel span:first-child strong { color: var(--link-ink); }
 .travel span { display: inline-block; }
 .travel strong { font-variant-numeric: tabular-nums; }
 .muted { color: var(--text-secondary); }
 .empty { color: var(--text-secondary); border-top: 1px solid var(--line); padding-top: 14px; }
-.bells p { margin: 7px 0 13px; font-size: 13px; }
+.walking p { margin: 7px 0 13px; color: var(--text-secondary); font-size: 13px; }
+.bell-reference summary { cursor: pointer; color: var(--link-ink); padding: 6px 0; }
+.bell-reference summary h2 { display: inline; margin-left: 3px; font-size: 16px; }
+.bell-reference[open] #bells { margin-top: 6px; }
+.walking ul { margin: 0; padding: 0; list-style: none; }
+.walking li { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; }
+.walking li span { display: block; margin-top: 2px; color: var(--text-secondary); }
+.walk-value { flex: none; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .bells ol { margin: 0; padding: 0; list-style: none; }
 .bells li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
 .bells time { font-weight: 600; }
@@ -112,7 +141,7 @@ h2 { font-size: 21px; line-height: 1.2; letter-spacing: -.02em; }
 .gate button { margin-top: 14px; }
 #notice { background: #e5f1fd; border-radius: 10px; color: #144f81; }
 #notice[data-error] { background: #fff1e9; color: #873b1d; }
-dialog { width: min(660px, calc(100% - 24px)); max-height: calc(100dvh - 32px); padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); color: inherit; }
+dialog { width: min(660px, calc(100% - 24px)); max-height: calc(100dvh - 32px); padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); color: inherit; overscroll-behavior: contain; }
 dialog::backdrop { background: #14243380; }
 .dialog-head, .dialog-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .dialog-head { margin-bottom: 10px; }
@@ -139,31 +168,20 @@ fieldset { min-width: 0; border: 1px solid var(--line); border-radius: 8px; marg
 .preview-row input[data-title] { flex: 1; margin-top: 0; }
 .preview-actions { padding: 10px 0; }
 @media (max-width: 720px) {
+  button { min-height: 44px; }
   .shell { padding: 18px 12px 36px; }
   .heading { align-items: start; flex-direction: column; margin: 18px 0; }
   .week-nav, .legend { padding-inline: 10px; }
   .timezone { display: none; }
   .week-nav h2 { font-size: 16px; }
   .week-nav .actions { flex-wrap: nowrap; gap: 4px; }
-  .week-nav button { padding-inline: 7px; min-width: 34px; }
-  .day-cell { min-height: 0; padding: 0 2px; }
-  .day-button { padding: 5px 0; text-align: center; }
-  .day-button > span:first-child, .day-button strong { display: block; margin: 0; }
-  .day-button small { display: block; color: var(--text-secondary); font-weight: 500; font-size: 11px; }
-  .day-off-label { font-size: 10px; }
-  .day-off-label span:first-child { display: none; }
-  .day-off-label span:last-child { display: inline; }
-  .day-button .markers { display: flex; justify-content: center; gap: 3px; min-height: 6px; margin-top: 3px; }
-  .markers i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-  .day-children { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-top: 4px; }
-  .day-children .child-tag { padding: 1px 3px; font-size: 10px; }
-  @media (prefers-color-scheme: dark) {
-    .markers i { background: var(--item-bg); }
-  }
-  .week-item, .week-more { display: none; }
+  .week-nav button { padding-inline: 7px; min-width: 44px; }
+  .week-item { min-height: 0; }
   .schedule-layout { grid-template-areas: "agenda" "week" "bells"; grid-template-columns: minmax(0, 1fr); gap: 12px; }
-  .agenda, .bells { padding: 13px; }
+  .agenda, .bells, .walking { padding: 13px; }
+  .reference { gap: 12px; }
   .agenda-row { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; }
+  .event-edit { width: 44px; min-height: 44px; }
   .when { grid-column: 1 / -1; }
   .agenda-head button { white-space: nowrap; }
   .event-title { font-size: 16px; }

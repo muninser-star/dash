@@ -23,7 +23,7 @@ export function occurs(event, date) {
 
 export function dayClosure(date, ranges) {
   const matching = ranges.filter(range => range.date_from <= date && date <= range.date_to);
-  const closed = matching.find(range => range.kind === 'holiday') || matching.find(range => range.kind === 'vacation');
+  const closed = matching.find(range => range.kind === 'vacation') || matching.find(range => range.kind === 'holiday');
   if (closed) return { date, kind: closed.kind, label: closed.label };
   if (weekday(date) > 5 && !matching.some(range => range.kind === 'workday')) {
     return { date, kind: 'weekend', label: 'Выходной' };
@@ -35,6 +35,34 @@ export function travelClock(time, delta) {
   const value = minutes(time) + delta;
   const day = Math.floor(value / 1440);
   return timeOf((value + 1440) % 1440) + (day < 0 ? ' накануне' : day > 0 ? ' на следующий день' : '');
+}
+
+export const departureTime = (start, travel) => travelClock(start, -(travel + 5));
+
+export function timelineLanes(events, startMinute, hourHeight, minimumHeight) {
+  const items = [];
+  let groupStart = 0, groupEnd = 0, lanes = [];
+  const finishGroup = () => {
+    for (let i = groupStart; i < items.length; i++) items[i].lanes = lanes.length;
+  };
+  for (const event of events) {
+    const start = minutes(event.start_time);
+    const top = (start - startMinute) * hourHeight / 60;
+    const height = Math.max(minimumHeight, (minutes(event.end_time) - start) * hourHeight / 60);
+    if (top >= groupEnd) {
+      finishGroup();
+      groupStart = items.length;
+      lanes = [];
+    }
+    const end = top + height;
+    const free = lanes.findIndex(busyUntil => busyUntil <= top);
+    const lane = free < 0 ? lanes.length : free;
+    lanes[lane] = end;
+    groupEnd = Math.max(groupEnd, end);
+    items.push({ event, top, height, lane, lanes: 1 });
+  }
+  finishGroup();
+  return items;
 }
 
 export function loadMinutes(events) {
@@ -56,6 +84,7 @@ export function eventInput(value) {
   const school_kind = category === 'school' ? value.school_kind || 'school' : null;
   const lesson = school_kind === 'lesson' && value.lesson != null ? Number(value.lesson) : null;
   const travelOut = value.travel_out ?? null, travelBack = value.travel_back ?? null;
+  const route = value.route_id === '' ? null : value.route_id ?? null;
   const travelOk = n => n === null || (Number.isInteger(n) && n >= 0 && n <= 360);
   if (!title || title.length > 120 || !Object.hasOwn(children, child) || !Object.hasOwn(categories, category)
     || !validDate(date) || !validTime(start_time) || !validTime(end_time) || start_time >= end_time
@@ -63,12 +92,14 @@ export function eventInput(value) {
     || (until && (!weekdays.length || !validDate(until) || until < date))
     || (school_kind && !Object.hasOwn(schoolKinds, school_kind))
     || (lesson !== null && (!Number.isInteger(lesson) || lesson < 1 || lesson > 12))
-    || !travelOk(travelOut) || !travelOk(travelBack)) throw Error('invalid_event');
+    || !travelOk(travelOut) || !travelOk(travelBack)
+    || (route !== null && (typeof route !== 'string' || !/^[a-z0-9_-]{1,32}$/.test(route)))) throw Error('invalid_event');
   return {
     title, child, category, school_kind, lesson, date, start_time, end_time,
     weekdays: [...new Set(weekdays)].sort(), until,
     place: typeof value.place === 'string' ? value.place.trim().slice(0, 140) : '',
     note: typeof value.note === 'string' ? value.note.trim().slice(0, 300) : '',
     travel_out: travelOut, travel_back: travelBack, tentative: value.tentative === true,
+    ...(Object.hasOwn(value, 'route_id') ? { route_id: route } : {}),
   };
 }

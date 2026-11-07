@@ -6,11 +6,12 @@
   <meta name="robots" content="noindex,nofollow">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self' https://cuhplpukqhdfutcymtmv.supabase.co; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'">
-  <meta name="theme-color" content="#f3f5f7">
+  <meta name="theme-color" content="#f3f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#101518" media="(prefers-color-scheme: dark)">
   <title>Школа и кружки · Семейный дашборд</title>
   <link rel="stylesheet" href="../токены.css">
-  <link rel="stylesheet" href="style.css?v=2">
-  <script type="module" src="app.mjs?v=2"></script>
+  <link rel="stylesheet" href="style.css?v=3">
+  <script type="module" src="app.mjs?v=3"></script>
 </head>
 <body>
   <main class="shell">
@@ -18,11 +19,10 @@
     <header class="heading">
       <div>
         <h1>Школа и кружки</h1>
-        <p>Расписание детей, нагрузка и время на дорогу.</p>
+        <p>План дня и время выхода из дома.</p>
       </div>
       <div class="actions" id="header-actions" hidden>
         <button type="button" id="import-open"><svg aria-hidden="true"><use href="../icons.svg#i-drive"/></svg> Импорт</button>
-        <button type="button" class="primary" id="add"><svg aria-hidden="true"><use href="../icons.svg#i-add"/></svg> Событие</button>
       </div>
     </header>
     <form id="gate" class="panel gate" hidden>
@@ -52,9 +52,10 @@
               <h2 id="day-title" tabindex="-1"></h2>
               <div id="day-load" class="load"></div>
             </div>
-            <button type="button" id="day-add" aria-label="Добавить событие на выбранный день">+ Добавить</button>
+            <button type="button" class="primary" id="day-add" aria-label="Добавить событие на выбранный день">+ Добавить</button>
           </header>
           <p id="day-off-note" class="day-off-note" hidden></p>
+          <div id="school-walk" class="school-walk" hidden></div>
           <div id="agenda"></div>
         </section>
         <section class="panel calendar" id="week-calendar" aria-label="Календарь на неделю" tabindex="-1">
@@ -66,15 +67,25 @@
               <button type="button" id="next" class="arrow" aria-label="Следующая неделя"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></button>
             </div>
           </div>
-          <div id="week" class="week" aria-label="Дни недели"></div>
+          <div class="week-scroll" id="week-scroll" tabindex="0" role="region" aria-label="Недельная сетка по времени">
+            <div id="week" class="week"></div>
+          </div>
           <div class="legend"><span class="lesson">Уроки</span><span class="school">Школа / сад</span><span class="club">Кружки</span><span class="other">Прочее</span></div>
         </section>
-        <aside class="panel bells" aria-labelledby="bells-title">
-          <h2 id="bells-title">Звонки в школе</h2>
-          <p>Время уроков Димы. Предметы и продлёнку можно добавить в календарь.</p>
-          <div id="bells"></div>
-          <a class="telegram" href="https://t.me/Opal_Pilot_bot" target="_blank" rel="noopener">Расписание в Telegram <span>/school</span></a>
-        </aside>
+        <div class="reference">
+          <section class="panel walking" id="walking" aria-labelledby="walking-title" hidden>
+            <h2 id="walking-title">Пешком от дома</h2>
+            <p>Оценка в одну сторону при 4,5 км/ч. Время выхода включает 5 минут на переодевание.</p>
+            <ul id="walking-routes"></ul>
+          </section>
+          <aside class="panel bells" aria-labelledby="bells-title">
+            <details class="bell-reference">
+              <summary><h2 id="bells-title">Звонки в школе</h2></summary>
+              <div id="bells"></div>
+            </details>
+            <a class="telegram" href="https://t.me/Opal_Pilot_bot" target="_blank" rel="noopener">Расписание в Telegram <span>/school</span></a>
+          </aside>
+        </div>
       </div>
     </div>
   </main>
@@ -104,9 +115,10 @@
         <label>Последний день <span class="hint">(необязательно)</span><input name="until" type="date" min="2000-01-01" max="2099-12-31"></label>
       </fieldset>
       <label>Место<input name="place" maxlength="140" placeholder="Название или адрес"></label>
+      <label id="route-field" hidden>Пеший маршрут от дома<select name="route_id"><option value="">Указать минуты вручную</option></select></label>
       <div class="fields">
-        <label>Дорога туда, мин<input name="travel_out" type="number" min="0" max="360" step="1" placeholder="Указать"></label>
-        <label>Дорога обратно, мин<input name="travel_back" type="number" min="0" max="360" step="1" placeholder="Указать"></label>
+        <label>Дорога из дома, мин<input name="travel_out" type="number" min="0" max="360" step="1" placeholder="Указать"></label>
+        <label>Дорога домой, мин<input name="travel_back" type="number" min="0" max="360" step="1" placeholder="Указать"></label>
       </div>
       <label>Заметка<input name="note" maxlength="300" placeholder="Например, взять форму"></label>
       <label class="checkline"><input name="tentative" type="checkbox"> Время или занятие ещё нужно уточнить</label>
