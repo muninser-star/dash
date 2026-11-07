@@ -1,7 +1,20 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { dayClosure, departureTime, eventInput, loadMinutes, monday, occurs, timelineLanes, today, travelClock } from '../school/schedule.mjs';
+import { dayClosure, departureTime, eventInput, loadMinutes, monday, occurs, schoolBlocks, timelineLanes, today, travelClock } from '../school/schedule.mjs';
 import { parseSchedule } from '../school/import.mjs';
+
+test('school blocks include aftercare and keep children and kindergarten separate', () => {
+  const lesson = { child: 'dima', category: 'school', school_kind: 'lesson', start_time: '08:30', end_time: '09:05' };
+  const aftercare = { ...lesson, school_kind: 'aftercare', start_time: '13:00', end_time: '16:00', route_id: 'school' };
+  const kindergarten = { ...lesson, child: 'danya', school_kind: 'kindergarten', end_time: '17:00' };
+  const otherSchool = { ...lesson, child: 'danya', school_kind: 'school' };
+  const club = { ...lesson, category: 'club', school_kind: null, end_time: '19:00' };
+  assert.deepEqual(schoolBlocks([aftercare, kindergarten, lesson, otherSchool, club]), [
+    { kind: 'school', first: lesson, last: aftercare, routeId: 'school' },
+    { kind: 'kindergarten', first: kindergarten, last: kindergarten, routeId: undefined },
+    { kind: 'school', first: otherSchool, last: otherSchool, routeId: undefined },
+  ]);
+});
 
 const input = {
   title: 'Английский', child: 'dima', category: 'club', date: '2026-11-09',

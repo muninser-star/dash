@@ -10,8 +10,8 @@
   <meta name="theme-color" content="#101518" media="(prefers-color-scheme: dark)">
   <title>Школа и кружки · Семейный дашборд</title>
   <link rel="stylesheet" href="../токены.css">
-  <link rel="stylesheet" href="style.css?v=3">
-  <script type="module" src="app.mjs?v=3"></script>
+  <link rel="stylesheet" href="style.css?v=4">
+  <script type="module" src="app.mjs?v=4"></script>
 </head>
 <body>
   <main class="shell">
@@ -48,10 +48,7 @@
       <div class="schedule-layout">
         <section class="panel agenda" aria-labelledby="day-title">
           <header class="agenda-head">
-            <div>
-              <h2 id="day-title" tabindex="-1"></h2>
-              <div id="day-load" class="load"></div>
-            </div>
+            <h2 id="day-title" tabindex="-1"></h2>
             <button type="button" class="primary" id="day-add" aria-label="Добавить событие на выбранный день">+ Добавить</button>
           </header>
           <p id="day-off-note" class="day-off-note" hidden></p>
@@ -59,7 +56,7 @@
           <div id="agenda"></div>
         </section>
         <section class="panel calendar" id="week-calendar" aria-label="Календарь на неделю" tabindex="-1">
-          <div class="week-nav">
+          <div class="week-nav" id="week-nav">
             <h2 id="week-title"></h2>
             <div class="actions">
               <button type="button" id="prev" class="arrow" aria-label="Предыдущая неделя"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button>
@@ -70,7 +67,7 @@
           <div class="week-scroll" id="week-scroll" tabindex="0" role="region" aria-label="Недельная сетка по времени">
             <div id="week" class="week"></div>
           </div>
-          <div class="legend"><span class="lesson">Уроки</span><span class="school">Школа / сад</span><span class="club">Кружки</span><span class="other">Прочее</span></div>
+          <div class="legend" id="week-legend"><span class="school">Школа / сад</span><span class="club">Кружки</span><span class="other">Прочее</span></div>
         </section>
         <div class="reference">
           <section class="panel walking" id="walking" aria-labelledby="walking-title" hidden>

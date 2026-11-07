@@ -31,6 +31,21 @@ export function dayClosure(date, ranges) {
   return null;
 }
 
+export function schoolBlocks(events) {
+  const blocks = new Map();
+  for (const event of events) {
+    if (event.category !== 'school') continue;
+    const kind = event.school_kind === 'kindergarten' ? 'kindergarten' : 'school';
+    const key = event.child + '/' + kind;
+    if (!blocks.has(key)) blocks.set(key, { kind, first: event, last: event, routeId: event.route_id });
+    const block = blocks.get(key);
+    if (event.start_time < block.first.start_time) block.first = event;
+    if (event.end_time >= block.last.end_time) block.last = event;
+    block.routeId ||= event.route_id;
+  }
+  return [...blocks.values()];
+}
+
 export function travelClock(time, delta) {
   const value = minutes(time) + delta;
   const day = Math.floor(value / 1440);
