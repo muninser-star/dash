@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
-import { addDays, dayClosure, departureTime, eventInput, normalizeTime, occurs, validDate, validTime } from "../../../school/schedule.mjs";
+import { addDays, dayClosure, departureTime, eventInput, normalizeTime, occurs, validDate, validTime, withAftercare } from "../../../school/schedule.mjs";
 import { mergeGoogleEvents } from "./google.mjs";
 
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
@@ -27,7 +27,7 @@ async function access(code: string | null) {
   const { data, error } = await db.from("access_codes").select("owner,hidden_people")
     .eq("code_hash", await hash(code)).is("revoked_at", null).in("owner", ["denis", "anya"]).limit(1).maybeSingle();
   if (error) throw error;
-  return !!data && !(data.hidden_people || []).some((person: string) => ["dima", "danya"].includes(person));
+  return !!data && !(data.hidden_people || []).some((person: string) => ["dima", "danya", "anya"].includes(person));
 }
 
 const normalize = <T extends { start_time: string; end_time: string }>(row: T) => ({
@@ -47,7 +47,7 @@ async function list(from: string, to: string) {
     db.from("dash_school_skips").select("event_id,date").gte("date", from).lte("date", to),
     db.from("dash_school_bells").select("*").order("lesson"),
     db.from("dash_school_closures").select("date_from,date_to,kind,label").lte("date_from", to).gte("date_to", from).order("date_from"),
-    db.from("dash_school_routes").select("id,label,place,meters,minutes").order("sort_order"),
+    db.from("dash_school_routes").select("id,label,place,meters,minutes,school_minutes").order("sort_order"),
     listFamilyCalendar(from, to),
   ]);
   if (eventResult.error || skipResult.error || bellResult.error || closureResult.error || routeResult.error) throw Error("database_read");
@@ -71,7 +71,9 @@ async function list(from: string, to: string) {
       });
     }
   }
-  return ok({ events: mergeGoogleEvents(events, google, from, to, routeMinutes), bells: bellResult.data.map(normalize), closures, routes: routeResult.data });
+  const fromSchoolMinutes = new Map(routeResult.data.map(route => [route.id, route.school_minutes]));
+  const plan = withAftercare(mergeGoogleEvents(events, google, from, to, routeMinutes), fromSchoolMinutes);
+  return ok({ events: plan, bells: bellResult.data.map(normalize), closures, routes: routeResult.data });
 }
 
 async function listFamilyCalendar(from: string, to: string) {

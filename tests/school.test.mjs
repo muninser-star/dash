@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { dayClosure, departureTime, eventInput, loadMinutes, monday, occurs, schoolBlocks, timelineLanes, today, travelClock } from '../school/schedule.mjs';
+import { dayClosure, departureTime, eventInput, loadMinutes, monday, occurs, schoolBlocks, timelineLanes, today, travelClock, withAftercare } from '../school/schedule.mjs';
 import { parseSchedule } from '../school/import.mjs';
 import { mergeGoogleEvents } from '../supabase/functions/school/google.mjs';
 
@@ -30,9 +30,12 @@ test('Google activities replace matching local times and keep walking directions
     { id: '2', title: 'Педиатр', start: date + 'T12:00:00+03:00', end: date + 'T13:00:00+03:00' },
     { id: '3', title: 'Поездка', start: date, end: '2026-11-17' },
     { id: '4', title: 'Даня, гимнастика', start: date + 'T18:00:00+03:00', end: date + 'T19:00:00+03:00' },
+    { id: '5', title: 'Аня: Английский', start: date + 'T12:00:00+03:00', end: date + 'T13:00:00+03:00' },
+    { id: '6', title: 'Офис', start: date + 'T10:00:00+03:00', end: date + 'T11:00:00+03:00' },
+    { id: '7', title: 'Денис. Личное', start: date + 'T14:00:00+03:00', end: date + 'T15:00:00+03:00' },
   ];
   const result = mergeGoogleEvents([local, football], google, date, '2026-11-17', new Map([['pool', 7]]));
-  assert.equal(result.length, 6);
+  assert.equal(result.length, 7);
   assert.ok(result.includes(football));
   assert.ok(!result.includes(local));
   const pool = result.find(e => e.title === 'Бассейн');
@@ -40,6 +43,22 @@ test('Google activities replace matching local times and keep walking directions
   assert.deepEqual(result.filter(e => e.all_day).map(e => e.occurrence), [date, '2026-11-16']);
   assert.deepEqual(result.filter(e => e.category === 'health').map(e => e.child), ['family']);
   assert.equal(result.find(e => e.id === 'google-4').child, 'danya');
+  assert.deepEqual(result.filter(e => e.child === 'anya').map(e => [e.title, e.category]), [['Английский', 'club']]);
+  assert.ok(result.every(e => e.title !== 'Офис' && e.title !== 'Личное'));
+});
+
+test('Dima stays in aftercare until 17:00 or leaves early for an off-site activity', () => {
+  const lesson = { child: 'dima', occurrence: '2026-11-09', category: 'school', school_kind: 'lesson', start_time: '12:30', end_time: '13:05', route_id: 'school' };
+  const onSite = { ...lesson, category: 'club', school_kind: null, start_time: '15:00', end_time: '16:00' };
+  const offSite = { ...onSite, category: 'health', route_id: 'neuro', start_time: '16:30', end_time: '17:30' };
+  const manual = { ...lesson, school_kind: 'aftercare', start_time: '13:05', end_time: '16:00' };
+  const road = new Map([['neuro', 20]]);
+  const plan = rows => withAftercare(rows, road).find(event => event.source === 'aftercare');
+  assert.deepEqual([plan([lesson, onSite]).start_time, plan([lesson, onSite]).end_time], ['13:05', '17:00']);
+  assert.equal(plan([lesson, offSite]).end_time, '16:05');
+  assert.equal(plan([lesson, { ...offSite, route_id: undefined }]).pickup_latest, true);
+  assert.equal(plan([lesson, offSite, manual]), undefined);
+  assert.equal(plan([offSite]), undefined);
 });
 
 const input = {

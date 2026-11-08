@@ -81,7 +81,7 @@ body{padding-bottom:max(24px,env(safe-area-inset-bottom))}
   <section class="fin" id="fin"></section>
 </div>
 <div id="toast" class="toast" hidden></div>
-<script src="логика.js"></script>
+<script src="логика.js?v=2"></script>
 <script>
 const SB_URL = "https://cuhplpukqhdfutcymtmv.supabase.co", SB_KEY = "sb_publishable_ILfqT6mCyHBOu6BVVRxHKQ_0bPQtNi3", KEY_LS = "dash_key";
 const $ = (id) => document.getElementById(id);
@@ -138,9 +138,9 @@ async function load() {
     if (legacy.status === "rejected" && school.status === "rejected") S.kids = { error: true };
     else {
       const rows = school.status === "fulfilled" ? school.value.events : [];
-      const key = (e) => [Dash.childOf(e), Date.parse(e.start), e.title.toLowerCase().trim().replace(/^(дима|даня)[\s:·–—-]+/u, "")].join("|");
+      const key = (e) => [Dash.childOf(e), Date.parse(e.start), e.title.toLowerCase().trim().replace(/^(дима|даня|аня|анна)[\s.,:·–—-]+/u, "")].join("|");
       const known = new Set(rows.map(key));
-      const old = legacy.status === "fulfilled" ? legacy.value.events.filter((e) => !known.has(key(e))) : [];
+      const old = legacy.status === "fulfilled" ? legacy.value.events.filter((e) => !Dash.isPersonalEvent(e) && !known.has(key(e))) : [];
       S.kids = { events: [...rows, ...old], legacy: legacy.status === "fulfilled", school: school.status === "fulfilled" };
     }
     render();

@@ -7,7 +7,7 @@
   const DAY = 86400000;
   const DOW_RU = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
   const DOW_KEY = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
-  const CHILD = { dima: "Дима", danya: "Даня", family: "Семья" };
+  const CHILD = { dima: "Дима", danya: "Даня", anya: "Аня", family: "Семья" };
 
   const ms = (v) => (v instanceof Date ? v.getTime() : new Date(v).getTime());
   // момент → московские день (число суток с 1970), минуты от полуночи, день недели 0=Пн
@@ -21,11 +21,15 @@
 
   // ── Расписание детей (блок 3) ─────────────────────────────────────────────
   function childOf(ev) {
-    if (ev && CHILD[ev.child]) return ev.child;
+    if (ev && Object.hasOwn(CHILD, ev.child)) return ev.child;
     const t = String((ev && ev.title) || "").trim().toLowerCase();
     if (t.startsWith("дима")) return "dima";
     if (t.startsWith("даня")) return "danya";
+    if (/^(аня|анна)[\s.,:·–—-]/u.test(t)) return "anya";
     return "family";
+  }
+  function isPersonalEvent(event) {
+    return event.child === "denis" || /^(?:офис[\s.!]*$|денис[\s.,:·–—-])/iu.test(String(event.title).trim());
   }
   function untilText(min) {
     if (min < 1) return "сейчас";
@@ -37,9 +41,9 @@
   function scheduleView(now, events) {
     const n = ms(now), today = msk(n).day, out = { today: [], tomorrow: [] };
     for (const e of events || []) {
-      const allDay = !String(e.start).includes("T");
+      const allDay = e.all_day || !String(e.start).includes("T");
       const s = allDay ? null : ms(e.start), en = allDay ? null : ms(e.end || e.start);
-      const day = allDay ? ymdToDay(String(e.start)) : msk(s).day;
+      const day = allDay ? ymdToDay(String(e.start).slice(0, 10)) : msk(s).day;
       const bucket = day === today ? out.today : day === today + 1 ? out.tomorrow : null;
       if (!bucket) continue;
       const row = { title: e.title, place: e.place || "", child: childOf(e), childName: CHILD[childOf(e)], start: e.start, allDay };
@@ -182,5 +186,5 @@
     return { order, urgent, collapsed, night };
   }
 
-  return { childOf, scheduleView, parseSeed, exactDays, taskGroup, healthItems, healthCard, taskKey, normTitle, filterFilms, genreAvg, whyFacts, focusOrder, untilText, msk, hhmm, CHILD, DOW_RU };
+  return { childOf, isPersonalEvent, scheduleView, parseSeed, exactDays, taskGroup, healthItems, healthCard, taskKey, normTitle, filterFilms, genreAvg, whyFacts, focusOrder, untilText, msk, hhmm, CHILD, DOW_RU };
 });

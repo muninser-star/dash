@@ -1,4 +1,4 @@
-import { addDays, isHealthTitle, minutes, normalizeTime, timeOf, validDate, validTime } from './schedule.mjs?v=5';
+import { addDays, isHealthTitle, minutes, normalizeTime, timeOf, validDate, validTime } from './schedule.mjs?v=6';
 
 const week = [
   'пн|понедельник(?:ам)?', 'вт|вторник(?:ам)?', 'ср|сред[ауы]|средам', 'чт|четверг(?:ам)?',
@@ -6,7 +6,7 @@ const week = [
 ];
 const word = pattern => new RegExp('(?<![\\p{L}])(?:' + pattern + ')(?![\\p{L}])', 'iu');
 const dayPatterns = week.map(word);
-const childPatterns = { dima: word('дима|димы|диме'), danya: word('даня|дани|дане') };
+const childPatterns = { dima: word('дима|димы|диме'), danya: word('даня|дани|дане'), anya: word('аня|ани|ане|анна|анны|анне') };
 const clear = line => line.replace(/^[\s,;|:–—\-•]+|[\s,;|:–—\-•]+$/g, '').replace(/\s{2,}/g, ' ').trim();
 const lessonPattern = /(?:^|[^\d])(\d{1,2})(?:[-–]?(?:й|ый))?\s*(?:урок|ур\.)/iu;
 const durationPattern = /(?:^|\s)(\d{1,3})\s*мин(?:ут[аы]?)?(?![\p{L}])/iu;

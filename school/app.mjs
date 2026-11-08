@@ -1,6 +1,6 @@
-import { addDays, categories, children, days, departureTime, eventInput, formatDate, minutes,
-  monday, schoolBlocks, schoolKinds, timeOf, timelineLanes, today, travelClock, validDate, validTime, weekday } from './schedule.mjs?v=5';
-import { parseSchedule } from './import.mjs?v=5';
+import { addDays, categories, participants, days, departureTime, eventInput, formatDate, minutes,
+  monday, schoolBlocks, schoolKinds, timeOf, timelineLanes, today, travelClock, validDate, validTime, weekday } from './schedule.mjs?v=6';
+import { parseSchedule } from './import.mjs?v=6';
 
 const $ = id => document.getElementById(id);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
@@ -102,11 +102,12 @@ $('gate').addEventListener('submit', event => {
 });
 
 const filtered = date => state.rows.filter(e => e.occurrence === date && (state.filter === 'all' || e.child === state.filter));
-const type = e => e.school_kind ? schoolKinds[e.school_kind] : categories[e.category];
+const type = e => schoolKinds[e.school_kind] ?? categories[e.category] ?? categories.other;
 const dayOffLabels = { holiday: 'Праздник', vacation: 'Каникулы', weekend: 'Выходной' };
 const rowKey = e => e.id + '/' + e.occurrence;
-const people = { ...children, family: 'Семья' };
-const childTag = child => '<span class="child-tag child-' + child + '">' + people[child] + '</span>';
+const people = { ...participants, family: 'Семья' };
+const person = id => Object.hasOwn(people, id) ? id : 'family';
+const childTag = id => '<span class="child-tag child-' + person(id) + '">' + people[person(id)] + '</span>';
 const routeFor = e => state.routes.get(e.route_id);
 const walkTime = route => '≈ ' + route.minutes + ' мин';
 const schoolDayEvent = e => e.category === 'school' && e.school_kind !== 'kindergarten';
@@ -139,7 +140,7 @@ function weekEvent(e) {
   const kind = e.school_kind === 'aftercare' ? 'school aftercare' : e.category;
   const head = e.all_day ? '' : '<span class="week-item-head"><span class="week-time">' + time + '</span>' + elapsed + '</span>';
   return '<button type="button" class="week-item ' + kind + (e.all_day ? ' all-day' : '') + (e.tentative ? ' tentative' : '') + '"' + action +
-    '" title="' + esc(people[e.child] + ' · ' + e.title) + '">' + head + '<span class="week-item-title">' + eventTitle(e) +
+    '" title="' + esc(people[person(e.child)] + ' · ' + e.title) + '">' + head + '<span class="week-item-title">' + eventTitle(e) +
     '</span><span class="week-item-meta">' + childTag(e.child) +
     (route ? '<span class="week-walk" role="img" title="Пешком от дома" aria-label="Пешком от дома ' + walkTime(route) + '">' +
       '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13" cy="5" r="2"/><path d="m7 21 4-6-1-4m8 10-4-5 1-6m-8 3 4-5 4 2 4 3"/></svg>' +
@@ -151,8 +152,11 @@ function schoolPlan(events) {
   $('school-walk').innerHTML = school.map(({ first, last, routeId }) => {
     const travel = first.travel_out ?? state.routes.get(routeId)?.minutes;
     const leave = travel == null ? '' : '<span>Выйти из дома <strong>' + leaveAt(first, travel) + '</strong></span>';
-    const endLabel = last.school_kind === 'lesson' ? 'Уроки до' : 'Забрать';
-    return '<p>' + childTag(first.child) + leave + '<span>' + endLabel + ' <strong>' + last.end_time + '</strong></span></p>';
+    const endLabel = last.school_kind === 'lesson' ? 'Уроки до' : last.pickup_latest ? 'Забрать до' : 'Забрать';
+    const schoolWalk = state.routes.get(routeId)?.minutes;
+    const pickupDeparture = last.source === 'aftercare' && !last.pickup_latest && schoolWalk != null
+      ? '<span>Выйти за Димой <strong>' + travelClock(last.end_time, -schoolWalk) + '</strong></span>' : '';
+    return '<p>' + childTag(first.child) + leave + pickupDeparture + '<span>' + endLabel + ' <strong>' + last.end_time + '</strong></span></p>';
   }).join('');
 }
 function renderRoutes() {
@@ -187,7 +191,7 @@ function renderWeek(current, available) {
   const hourHeight = Math.max(1, Math.floor(Math.min(64, budget / (toHour - fromHour), (budget - minimumCardHeight) * 60 / lastStart)));
   const columns = daily.map(day => timelineLanes(day.events.filter(e => !e.all_day), fromHour * 60, hourHeight, minimumCardHeight));
   const trackHeight = Math.max((toHour - fromHour) * hourHeight, ...columns.flat().map(item => item.top + item.height));
-  const widths = columns.map(items => Math.max(130, ...items.map(item => item.lanes * 102)));
+  const widths = columns.map(items => Math.max(124, ...items.map(item => item.lanes * 98)));
   const hours = Array.from({ length: toHour - fromHour + 1 }, (_, i) => '<span>' + timeOf((fromHour + i) * 60) + '</span>').join('');
   week.style.setProperty('--hour-height', hourHeight + 'px');
   week.style.setProperty('--track-height', trackHeight + 'px');
@@ -198,9 +202,9 @@ function renderWeek(current, available) {
   week.innerHTML = '<div class="time-axis" aria-hidden="true"><div class="time-axis-head">Время</div>' + allDayLabel + '<div class="hour-labels">' + hours + '</div></div>' +
     daily.map(({ label, date, events }) => {
     const kinds = [...new Set(events.map(e => e.category))];
-    const dayChildren = Object.keys(people).filter(child => events.some(e => e.child === child));
+    const dayChildren = Object.keys(people).filter(child => events.some(e => person(e.child) === child));
     const closed = state.closures.get(date);
-    const details = [...dayChildren.map(child => people[child]), ...kinds.map(kind => categories[kind])];
+    const details = [...dayChildren.map(child => people[child]), ...kinds.map(kind => categories[kind] ?? categories.other)];
     const labelFull = fmt(date) + (closed ? ', ' + closed.label : '') +
       (!available ? ', нет данных' : events.length ? ', событий: ' + events.length + ', ' + details.join(', ') : ', без событий');
     const special = closed && closed.kind !== 'weekend';
@@ -264,13 +268,15 @@ function agendaRow(e) {
   const home = e.travel_back ?? route?.minutes;
   const trip = [];
   if (!school) {
-    if (there != null) trip.push('Выйти из дома <strong>' + leaveAt(e, there) + '</strong>');
+    if (e.from_school) {
+      if (e.from_school_minutes != null) trip.push('Пешком от школы ≈ <strong>' + e.from_school_minutes + ' мин</strong>');
+    } else if (there != null) trip.push('Выйти из дома <strong>' + leaveAt(e, there) + '</strong>');
     if ((e.category === 'club' && (there != null || home != null)) || e.school_kind === 'kindergarten') trip.push('Забрать <strong>' + e.end_time + '</strong>');
     if (home != null) trip.push('Дома около <strong>' + travelClock(e.end_time, home) + '</strong>');
   }
   const place = e.place || (!school && route?.place);
   const when = e.all_day ? 'Весь день' : e.start_time + '–' + e.end_time;
-  const edit = e.source === 'google' ? '' : '<button type="button" class="event-edit" data-event="' + rowKey(e) + '" aria-label="Изменить: ' + esc(e.title) +
+  const edit = e.source ? '' : '<button type="button" class="event-edit" data-event="' + rowKey(e) + '" aria-label="Изменить: ' + esc(e.title) +
     '" title="Изменить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 4 4 4M4 20l4-.8L21 6.2 17.8 3 4.8 16z"/></svg></button>';
   return '<article class="agenda-row' + (school ? ' academic-row' : '') + '"><div class="when">' + when + '</div><div><h3 class="event-title">' + eventTitle(e) + '</h3>' +
     '<div class="meta">' + childTag(e.child) + '<span class="tag ' + e.category + '">' + type(e) + '</span>' +
@@ -508,7 +514,7 @@ function previewEvent(e) {
     '<div class="fields time-fields"><label>' + (e.weekdays.length ? 'Повторять с' : 'Дата') + input('date', e.date || draft.date, 'date') +
     '</label><label>Начало' + input('start_time', start, 'time') + '</label><label>Конец' + input('end_time', end, 'time') + '</label></div>' +
     (e.weekdays.length ? '<p class="hint">Каждую неделю · ' + e.weekdays.map(n => days[n - 1]).join(', ') + '</p>' : '') +
-    '<details><summary>Ребёнок, тип, дни, место и дорога</summary><div class="fields"><label>Ребёнок<select data-field="child">' + options(children, e.child || draft.child) +
+    '<details><summary>Участник, тип, дни, место и дорога</summary><div class="fields"><label>Для кого<select data-field="child">' + options(participants, e.child || draft.child) +
     '</select></label><label>Тип<select data-field="category">' + options(categories, category) +
     '</select></label><label>Для школы или сада<select data-field="school_kind">' + options(schoolKinds, e.school_kind || 'school') + '</select></label>' +
     '<label>Место' + input('place', e.place, 'text', 'maxlength="140"') + '</label></div>' +

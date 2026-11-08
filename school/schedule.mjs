@@ -1,4 +1,5 @@
 export const children = { dima: 'Дима', danya: 'Даня' };
+export const participants = { ...children, anya: 'Аня' };
 export const categories = { school: 'Школа / сад', club: 'Кружки', health: 'Здоровье', other: 'Прочее' };
 export const schoolKinds = { school: 'Школа', lesson: 'Урок', aftercare: 'Продлёнка', kindergarten: 'Сад' };
 export const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
@@ -47,6 +48,47 @@ export function schoolBlocks(events, separateAftercare = false) {
     block.routeId ||= event.route_id;
   }
   return [...blocks.values()];
+}
+
+export function withAftercare(events, fromSchoolMinutes) {
+  const dimaByDay = new Map();
+  for (const event of events) {
+    if (event.child !== 'dima') continue;
+    if (!dimaByDay.has(event.occurrence)) dimaByDay.set(event.occurrence, []);
+    dimaByDay.get(event.occurrence).push(event);
+  }
+  const aftercare = [], pickups = new Map();
+  for (const [date, rows] of dimaByDay) {
+    const blocks = schoolBlocks(rows, true);
+    const school = blocks.find(block => block.kind === 'school');
+    if (!school || blocks.some(block => block.kind === 'aftercare')) continue;
+    const start = school.last.end_time;
+    let pickup = '17:00', next, travel;
+    for (const event of rows) {
+      if (event.tentative || event.all_day || event.start_time < start || !['club', 'health'].includes(event.category)
+        || (school.routeId && event.route_id === school.routeId)) continue;
+      const walking = fromSchoolMinutes.get(event.route_id);
+      const candidate = departureTime(event.start_time, walking ?? 0);
+      if (candidate >= pickup) continue;
+      pickup = candidate;
+      next = event;
+      travel = walking;
+    }
+    if (pickup <= start) continue;
+    const roadUnknown = next && travel == null;
+    if (next) pickups.set(next, travel ?? null);
+    aftercare.push({
+      id: 'aftercare-' + date, occurrence: date, child: 'dima', category: 'school', school_kind: 'aftercare',
+      source: 'aftercare', title: 'Продлёнка', route_id: school.routeId, start_time: start, end_time: pickup,
+      start: date + 'T' + start + ':00+03:00', end: date + 'T' + pickup + ':00+03:00',
+      pickup_latest: Boolean(roadUnknown), note: roadUnknown ? 'Время дороги от школы до занятия нужно учесть отдельно.' : '',
+    });
+  }
+  const activities = events.map(event => pickups.has(event)
+    ? { ...event, from_school: true, from_school_minutes: pickups.get(event), departure_time: null }
+    : event);
+  return [...activities, ...aftercare].sort((a, b) =>
+    a.occurrence.localeCompare(b.occurrence) || a.start_time.localeCompare(b.start_time));
 }
 
 export function travelClock(time, delta) {
@@ -104,7 +146,7 @@ export function eventInput(value) {
   const travelOut = value.travel_out ?? null, travelBack = value.travel_back ?? null;
   const route = value.route_id === '' ? null : value.route_id ?? null;
   const travelOk = n => n === null || (Number.isInteger(n) && n >= 0 && n <= 360);
-  if (!title || title.length > 120 || !Object.hasOwn(children, child) || !Object.hasOwn(categories, category)
+  if (!title || title.length > 120 || !Object.hasOwn(participants, child) || !Object.hasOwn(categories, category)
     || !validDate(date) || !validTime(start_time) || !validTime(end_time) || start_time >= end_time
     || !Array.isArray(weekdays) || weekdays.length > 7 || weekdays.some(n => !Number.isInteger(n) || n < 1 || n > 7)
     || (until && (!weekdays.length || !validDate(until) || until < date))

@@ -10,8 +10,8 @@
   <meta name="theme-color" content="#101518" media="(prefers-color-scheme: dark)">
   <title>Школа и кружки · Семейный дашборд</title>
   <link rel="stylesheet" href="../токены.css">
-  <link rel="stylesheet" href="style.css?v=5">
-  <script type="module" src="app.mjs?v=5"></script>
+  <link rel="stylesheet" href="style.css?v=6">
+  <script type="module" src="app.mjs?v=6"></script>
 </head>
 <body>
   <main class="shell">
@@ -35,10 +35,11 @@
     <div id="calendar" hidden>
       <div id="notice" class="notice" role="status" hidden></div>
       <div class="toolbar">
-        <div class="filters" role="group" aria-label="Расписание ребёнка">
+        <div class="filters" role="group" aria-label="Для кого">
           <button type="button" data-filter="all" aria-pressed="true">Все события</button>
           <button type="button" class="child-filter child-dima" data-filter="dima" aria-pressed="false">Дима</button>
           <button type="button" class="child-filter child-danya" data-filter="danya" aria-pressed="false">Даня</button>
+          <button type="button" class="child-filter child-anya" data-filter="anya" aria-pressed="false">Аня</button>
         </div>
         <div class="toolbar-links">
           <span class="timezone">Московское время</span>
@@ -76,11 +77,10 @@
             <ul id="walking-routes"></ul>
           </section>
           <aside class="panel bells" aria-labelledby="bells-title">
-            <details class="bell-reference">
+            <details class="bell-reference" open>
               <summary><h2 id="bells-title">Звонки в школе</h2></summary>
               <div id="bells"></div>
             </details>
-            <a class="telegram" href="https://t.me/Opal_Pilot_bot" target="_blank" rel="noopener">Расписание в Telegram <span>/school</span></a>
           </aside>
         </div>
       </div>
@@ -93,7 +93,7 @@
       <p id="edit-description" class="hint" hidden></p>
       <label>Название<input name="title" required maxlength="120" placeholder="Например, английский"></label>
       <div class="fields">
-        <label>Ребёнок<select name="child"><option value="dima">Дима</option><option value="danya">Даня</option></select></label>
+        <label>Для кого<select name="child"><option value="dima">Дима</option><option value="danya">Даня</option><option value="anya">Аня</option></select></label>
         <label>Тип<select name="category"><option value="school">Школа / сад</option><option value="club">Кружки</option><option value="health">Здоровье</option><option value="other">Прочее</option></select></label>
       </div>
       <div class="fields" id="school-fields" hidden>
@@ -134,7 +134,7 @@
     <div class="dialog-head"><h2 id="import-title">Импорт расписания</h2><button type="button" data-close="import" aria-label="Закрыть">×</button></div>
     <form id="import-form">
       <div class="fields">
-        <label>Для кого<select name="child"><option value="dima">Дима</option><option value="danya">Даня</option></select></label>
+        <label>Для кого<select name="child"><option value="dima">Дима</option><option value="danya">Даня</option><option value="anya">Аня</option></select></label>
         <label>Дата для строк без даты<input name="date" type="date" required min="2000-01-01" max="2099-12-31"></label>
       </div>
       <label>Фото расписания<input type="file" name="photo" accept="image/*"></label>

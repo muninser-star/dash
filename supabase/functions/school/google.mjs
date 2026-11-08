@@ -1,10 +1,10 @@
-import { addDays, departureTime, isHealthTitle, minutes, validDate } from '../../../school/schedule.mjs';
+import { addDays, departureTime, isHealthTitle, minutes, participants, validDate } from '../../../school/schedule.mjs';
 
 const moscow = new Intl.DateTimeFormat('sv-SE', {
   timeZone: 'Europe/Moscow', dateStyle: 'short', timeStyle: 'short',
 });
 const localTitle = title => title.toLowerCase().replace(/ё/g, 'е').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
-const childNames = { дима: 'dima', даня: 'danya' };
+const names = { дима: 'dima', даня: 'danya', аня: 'anya', анна: 'anya' };
 const clubTitle = /^(?:бассейн|английский|гимнастика|футбол|лего[- ]конструирование)$/iu;
 
 function calendarTime(value) {
@@ -21,9 +21,11 @@ function occurrences(event, from, to) {
   if (!start || !end || !event.id || start.allDay !== end.allDay) return [];
   const endDate = end.time === '00:00' ? addDays(end.date, -1) : end.date;
   const name = String(event.title || '').trim();
-  const namedChild = /^(дима|даня)[\s.,:·–—-]+/iu.exec(name);
-  const child = childNames[namedChild?.[1].toLowerCase()] ?? (['dima', 'danya'].includes(event.child) ? event.child : 'family');
-  const title = (namedChild ? name.slice(namedChild[0].length) : name) || 'Событие';
+  const namedPerson = /^(дима|даня|аня|анна|денис)[\s.,:·–—-]+/iu.exec(name);
+  const nameKey = namedPerson?.[1].toLowerCase();
+  if (localTitle(name) === 'офис' || nameKey === 'денис' || event.child === 'denis') return [];
+  const child = names[nameKey] ?? (Object.hasOwn(participants, event.child) ? event.child : 'family');
+  const title = (namedPerson ? name.slice(namedPerson[0].length) : name) || 'Событие';
   const category = isHealthTitle(title) ? 'health' : child !== 'family' && clubTitle.test(title) ? 'club' : 'other';
   const result = [];
   for (let date = start.date < from ? from : start.date; date <= endDate && date <= to; date = addDays(date, 1)) {
@@ -61,6 +63,7 @@ export function mergeGoogleEvents(rows, google, from, to, routeMinutes) {
       ...match, ...event,
       category: event.category === 'health' ? 'health' : match.category,
       place: event.place || match.place,
+      tentative: false,
       departure_time: travel == null ? null : departureTime(event.start_time, travel),
     };
   });
