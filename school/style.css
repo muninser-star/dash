@@ -129,6 +129,8 @@ h2 { font-size: 21px; line-height: 1.2; letter-spacing: -.02em; }
 .event-edit svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .when { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .event-title { font-size: 17px; font-weight: 700; overflow-wrap: anywhere; }
+.aftercare-link { min-height: 30px; padding: 0; border: 0; background: transparent; color: var(--link-ink); font-weight: inherit; text-decoration: underline; text-underline-offset: 3px; text-align: start; }
+.aftercare-link:hover { background: transparent; text-decoration-thickness: 2px; }
 .event-icon { margin-inline-end: .25em; }
 .meta, .travel { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 5px; font-size: 13px; }
 .event-note, .place { margin-top: 5px; color: var(--text-secondary); font-size: 13px; overflow-wrap: anywhere; }
@@ -159,6 +161,10 @@ h2 { font-size: 21px; line-height: 1.2; letter-spacing: -.02em; }
 #notice[data-error] { background: #fff1e9; color: #873b1d; }
 dialog { width: min(660px, calc(100% - 24px)); max-height: calc(100dvh - 32px); padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); color: inherit; overscroll-behavior: contain; }
 dialog::backdrop { background: #14243380; }
+#aftercare-details { max-width: 420px; }
+#aftercare-contact { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 14px; margin: 14px 0 0; }
+#aftercare-contact dt { color: var(--text-secondary); }
+#aftercare-contact dd { margin: 0; font-weight: 600; }
 .dialog-head, .dialog-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .dialog-head { margin-bottom: 10px; }
 .dialog-head button { min-width: 42px; font-size: 21px; }
@@ -201,6 +207,7 @@ fieldset { min-width: 0; border: 1px solid var(--line); border-radius: 8px; marg
   .when { grid-column: 1 / -1; }
   .agenda-head button { white-space: nowrap; }
   .event-title { font-size: 16px; }
+  .aftercare-link { min-height: 44px; }
 }
 @media (max-width: 380px) {
   dialog { padding: 12px; }

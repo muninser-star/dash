@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
-import { addDays, dayClosure, departureTime, eventInput, normalizeTime, occurs, validDate, validTime, withAftercare } from "../../../school/schedule.mjs";
+import { addDays, dayClosure, departureTime, eventInput, normalizeTime, occurs, validDate, validTime, weekday, withAftercare } from "../../../school/schedule.mjs";
 import { mergeGoogleEvents } from "./google.mjs";
 
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
@@ -111,6 +111,13 @@ Deno.serve(async req => {
     if (!b || typeof b !== "object") return fail("bad_request");
     if (b.action === "list") return await list(b.from, b.to);
     if (code === Deno.env.get("FAMILY_BOT_SOURCE_KEY")) return fail("forbidden", 403);
+    if (b.action === "aftercare_contact") {
+      if (!validDate(b.date)) return fail("bad_request");
+      const { data, error } = await db.from("dash_school_aftercare_contacts")
+        .select("educator,room,phone").eq("weekday", weekday(b.date)).maybeSingle();
+      if (error) throw error;
+      return ok({ contact: data });
+    }
     if (b.action === "create") {
       if (!isUuid(b.id)) return fail("invalid_event");
       const result = await db.from("dash_school_events").upsert({ id: b.id, ...eventInput(b.event) }, { onConflict: "id", ignoreDuplicates: true });

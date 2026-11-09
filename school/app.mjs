@@ -111,6 +111,8 @@ const childTag = id => '<span class="child-tag child-' + person(id) + '">' + peo
 const routeFor = e => state.routes.get(e.route_id);
 const walkTime = route => '≈ ' + route.minutes + ' мин';
 const schoolDayEvent = e => e.category === 'school' && e.school_kind !== 'kindergarten';
+const hasAftercareDetails = e => e.school_kind === 'aftercare' && e.child === 'dima';
+const aftercareButton = e => ' data-aftercare="' + esc(rowKey(e)) + '" aria-haspopup="dialog"';
 const leaveAt = (e, travel) => e.departure_time || departureTime(e.start_time, travel);
 const minimumCardHeight = 44, axisWidth = 48;
 const activityIcons = [
@@ -135,12 +137,13 @@ function weekEvent(e) {
   const school = e.category === 'school';
   const length = minutes(e.end_time) - minutes(e.start_time);
   const elapsed = school || e.all_day ? '' : '<span class="week-duration">' + length + ' мин</span>';
-  const action = school || e.source === 'google' ? ' data-day="' + e.occurrence : ' data-event="' + rowKey(e);
+  const action = hasAftercareDetails(e) ? aftercareButton(e)
+    : school || e.source === 'google' ? ' data-day="' + e.occurrence + '"' : ' data-event="' + rowKey(e) + '"';
   const time = '<time>' + e.start_time + '</time>' + (school ? '–<time>' + e.end_time + '</time>' : '');
   const kind = e.school_kind === 'aftercare' ? 'school aftercare' : e.category;
   const head = e.all_day ? '' : '<span class="week-item-head"><span class="week-time">' + time + '</span>' + elapsed + '</span>';
   return '<button type="button" class="week-item ' + kind + (e.all_day ? ' all-day' : '') + (e.tentative ? ' tentative' : '') + '"' + action +
-    '" title="' + esc(people[person(e.child)] + ' · ' + e.title) + '">' + head + '<span class="week-item-title">' + eventTitle(e) +
+    ' title="' + esc(people[person(e.child)] + ' · ' + e.title) + '">' + head + '<span class="week-item-title">' + eventTitle(e) +
     '</span><span class="week-item-meta">' + childTag(e.child) +
     (route ? '<span class="week-walk" role="img" title="Пешком от дома" aria-label="Пешком от дома ' + walkTime(route) + '">' +
       '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13" cy="5" r="2"/><path d="m7 21 4-6-1-4m8 10-4-5 1-6m-8 3 4-5 4 2 4 3"/></svg>' +
@@ -278,7 +281,9 @@ function agendaRow(e) {
   const when = e.all_day ? 'Весь день' : e.start_time + '–' + e.end_time;
   const edit = e.source ? '' : '<button type="button" class="event-edit" data-event="' + rowKey(e) + '" aria-label="Изменить: ' + esc(e.title) +
     '" title="Изменить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 4 4 4M4 20l4-.8L21 6.2 17.8 3 4.8 16z"/></svg></button>';
-  return '<article class="agenda-row' + (school ? ' academic-row' : '') + '"><div class="when">' + when + '</div><div><h3 class="event-title">' + eventTitle(e) + '</h3>' +
+  const title = hasAftercareDetails(e)
+    ? '<button type="button" class="aftercare-link"' + aftercareButton(e) + '>' + eventTitle(e) + '</button>' : eventTitle(e);
+  return '<article class="agenda-row' + (school ? ' academic-row' : '') + '"><div class="when">' + when + '</div><div><h3 class="event-title">' + title + '</h3>' +
     '<div class="meta">' + childTag(e.child) + '<span class="tag ' + e.category + '">' + type(e) + '</span>' +
     (e.source === 'google' ? '<span class="muted">Google Календарь</span>' : '') +
     (e.tentative ? '<span class="tag tentative">Уточнить</span>' : '') + '</div>' +
@@ -338,8 +343,42 @@ $('agenda').addEventListener('toggle', event => {
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshToday(); });
 setInterval(() => { if (!document.hidden) refreshToday(); }, 60000);
 for (const button of document.querySelectorAll('[data-filter]')) button.onclick = () => { state.filter = button.dataset.filter; render(); };
+
+const aftercareDialog = $('aftercare-details');
+let aftercareRequest = 0;
+async function openAftercare(row) {
+  const request = ++aftercareRequest;
+  $('aftercare-date').textContent = 'Дима · ' + fmt(row.occurrence);
+  const contactList = $('aftercare-contact');
+  const phone = $('aftercare-phone');
+  contactList.hidden = true;
+  message('aftercare-message', 'Загружаю контакты…');
+  aftercareDialog.showModal();
+  try {
+    const { contact } = await api('aftercare_contact', { date: row.occurrence });
+    if (request !== aftercareRequest || !aftercareDialog.open) return;
+    if (!contact) return message('aftercare-message', 'На этот день контактов нет.');
+    $('aftercare-educator').textContent = contact.educator;
+    $('aftercare-room').textContent = contact.room;
+    const digits = contact.phone.slice(2);
+    phone.textContent = '+7 ' + digits.slice(0, 3) + ' ' + digits.slice(3, 6) + ' ' + digits.slice(6, 8) + ' ' + digits.slice(8);
+    phone.href = 'tel:' + contact.phone;
+    contactList.hidden = false;
+    message('aftercare-message', '');
+  } catch {
+    if (request === aftercareRequest && aftercareDialog.open) {
+      message('aftercare-message', 'Не удалось загрузить контакты. Откройте карточку ещё раз.', true);
+    }
+  }
+}
+
 $('calendar').addEventListener('click', event => {
   const button = event.target.closest('button');
+  if (button?.dataset.aftercare) {
+    const row = state.rows.find(e => rowKey(e) === button.dataset.aftercare);
+    if (row) openAftercare(row);
+    return;
+  }
   if (button?.dataset.day) showAgenda(button.dataset.day, event.detail === 0);
   if (button?.dataset.event) {
     const row = state.rows.find(e => rowKey(e) === button.dataset.event);
