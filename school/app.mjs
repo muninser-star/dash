@@ -599,3 +599,6 @@ preview.onsubmit = async event => {
   finally { controls.forEach(button => { button.disabled = false; }); }
 };
 load();
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => console.warn('Не удалось подключить режим приложения.'));
+}
