@@ -28,6 +28,12 @@
     "ic": "settings"
   },
   {
+    "title": "Расшифровка аудио",
+    "caption": "Спикеры, таймкоды и Markdown",
+    "url": "https://denis-transcript.auburncoot.chatgpt.site",
+    "ic": "dynamics"
+  },
+  {
     "title": "Занятия с Димой",
     "caption": "Учимся дома",
     "url": "https://muninser-star.github.io/LFK/",
