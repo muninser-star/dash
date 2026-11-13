@@ -69,6 +69,12 @@
     "ic": "wallet"
   },
   {
+    "title": "Семейное меню",
+    "caption": "Рецепты, план питания и покупки",
+    "url": "https://semeinoe-menu.onwardrose3.chatgpt.site/",
+    "ic": "card"
+  },
+  {
     "title": "Polza",
     "caption": "Баланс · пополнить",
     "url": "https://polza.ai/dashboard",
