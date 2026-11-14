@@ -1,6 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg">
 <defs><linearGradient id="milkFill" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#e8edf3"/></linearGradient><linearGradient id="meatFill" x2=".7" y2="1"><stop stop-color="#ffb8a7"/><stop offset="1" stop-color="#e77a76"/></linearGradient></defs>
 <symbol id="bananas" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#fff6d4"/><path d="M25 24c-8 32 9 57 42 46 8-3 14-9 17-18-24 21-49 1-49-28" fill="#ffce32" stroke="#e9ae16" stroke-width="2"/><path d="M35 23c-5 34 14 48 39 34 8-4 11-11 12-18-20 20-41 6-41-15" fill="#ffde59" stroke="#e9ae16" stroke-width="2"/><path d="m27 24 4-9 13 4 1 7" fill="#8e7a38"/><path d="m82 52 3-3m-1-9 4-3" stroke="#645236" stroke-width="4" stroke-linecap="round"/></symbol>
+<symbol id="red-bell-pepper" viewBox="0 0 100 100">
+  <path d="M48 26c-4-11 0-15 9-19l5 7c-6 2-8 5-6 13" fill="#4f8339" stroke="#2d5d32" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M52 28c12-13 32-4 34 14 3 16-3 42-15 48-6 3-12 0-15-3-4 6-13 6-19 2-5 2-12 1-17-5C10 73 8 48 13 36c5-12 19-19 30-11 4-1 7 1 9 3Z" fill="#e7473d" stroke="#a8292a" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M51 36c-5 18-3 39 3 49M66 34c9 12 9 32 3 45" fill="none" stroke="#b52c2d" stroke-width="3" stroke-linecap="round"/>
+  <path d="M27 35c-7 7-7 17-5 25" fill="none" stroke="#ff9581" stroke-width="6" stroke-linecap="round"/>
+</symbol>
+<symbol id="chicken-bird" viewBox="0 0 100 100">
+  <path d="M48 72v13m-8 1h13m11-13v12m-8 1h14" stroke="#b66a32" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <path d="M24 48c-7-8-12-14-15-14-3 12 2 22 9 28" fill="#fff7e3" stroke="#845451" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M76 25c-4-8 2-15 7-11 2 2 2 4 1 6 4-4 10-1 8 4-2 4-8 5-14 5" fill="#e74647" stroke="#a02c3c" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M87 32l9 4-9 6" fill="#f1a449" stroke="#9b5b36" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M76 43c12-1 15 6 10 11-4 3-9-1-10-7" fill="#e74647" stroke="#a02c3c" stroke-width="2.5"/>
+  <path d="M77 23c-8 0-13 7-13 14 0 9-7 9-16 8-9-1-20-3-28 5-9 10-3 20 8 24 11 5 30 6 42 0 15-8 16-23 17-34 2-8-2-15-10-17Z" fill="#fff7e3" stroke="#845451" stroke-width="3"/>
+  <path d="M31 57c9 3 22 4 30-1-1 9-8 15-16 15-7 0-12-4-14-9" fill="#f4d8b7" stroke="#ad7566" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="79" cy="33" r="2.5" fill="#3b3131"/>
+</symbol>
 <symbol id="chicken" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#ffece7"/><rect x="11" y="22" width="78" height="61" rx="14" fill="#f8f9fb" stroke="#d3d8e0" stroke-width="3"/><path d="M21 51c-1-19 22-25 34-12 8 9 2 22-8 28-15 9-25-2-26-16" fill="url(#meatFill)" stroke="#d5736a" stroke-width="2"/><path d="M51 57c0-16 18-22 27-11s1 24-10 27c-10 2-17-4-17-16" fill="#f9ad96" stroke="#d5736a" stroke-width="2"/><path d="m38 43 9 9m16 0 7 7" stroke="#fff0dd" stroke-width="5" stroke-linecap="round"/><rect x="29" y="15" width="43" height="15" rx="4" fill="#9ec285"/></symbol>
 <symbol id="milk" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#e9f3ff"/><rect x="38" y="10" width="24" height="13" rx="4" fill="#5b83c6"/><path d="M36 23h28v10c11 9 11 14 11 26v22c0 6-50 6-50 0V59c0-12 0-17 11-26Z" fill="url(#milkFill)" stroke="#b8cbd9" stroke-width="2"/><path d="M25 51h50v23H25" fill="#6ba886"/><path d="M46 54c-3 5-8 9-8 13a12 12 0 0 0 24 0c0-4-7-10-12-16Z" fill="#fff"/><path d="M33 40v7" stroke="#fff" stroke-width="4" stroke-linecap="round"/></symbol>
 <symbol id="eggs" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#f7eedf"/><path d="m10 55 12-13h56l12 13-7 28H17Z" fill="#bead92"/><g fill="#fff9e9" stroke="#dbcbb0" stroke-width="1.5"><ellipse cx="28" cy="43" rx="12" ry="18"/><ellipse cx="51" cy="40" rx="12" ry="18"/><ellipse cx="74" cy="43" rx="12" ry="18"/></g><path d="m10 57 21 10 20-9 21 9 18-10-7 26H17Z" fill="#d3c3a8"/><path d="M25 75h48" stroke="#b5a58e" stroke-width="2"/></symbol>

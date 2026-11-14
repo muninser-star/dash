@@ -7,7 +7,7 @@ const norm=s=>String(s||'').toLowerCase().replace(/ё/g,'е').replace(/\s+/g,' '
 const day=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Moscow'}).format(new Date());
 function unitPrice(o){return Number(o.price)>0&&Number(o.quantity)>0?Number(o.price)/Number(o.quantity):null;}
 function state(o,today=day(),days=14){if(o.deleted)return 'deleted';if(o.validUntil&&o.validUntil<today)return 'expired';if(!o.observedOn)return 'undated';const age=(Date.parse(today)-Date.parse(o.observedOn))/864e5;return age<0?'future':age>days?'stale':'fresh';}
-function validate(o){if(!o||typeof o!=='object'||!STORES.includes(o.store))return false;return typeof o.id==='string'&&o.id.length<150&&typeof o.name==='string'&&o.name.length>0&&o.name.length<400&&typeof o.productKey==='string'&&o.productKey.length<400&&['кг','л','шт'].includes(o.unit)&&(o.price===null||Number.isFinite(o.price)&&o.price>0&&o.price<1e7)&&(o.quantity===null||Number.isFinite(o.quantity)&&o.quantity>0&&o.quantity<1e5)&&(!o.observedOn||/^\d{4}-\d{2}-\d{2}$/.test(o.observedOn))&&(!o.validUntil||/^\d{4}-\d{2}-\d{2}$/.test(o.validUntil));}
+function validate(o){if(!o||typeof o!=='object'||typeof o.store!=='string'||!o.store.trim()||o.store.length>80||/[\p{Cc}\p{Cf}]/u.test(o.store))return false;return typeof o.id==='string'&&o.id.length<150&&typeof o.name==='string'&&o.name.length>0&&o.name.length<400&&typeof o.productKey==='string'&&o.productKey.length<400&&['кг','л','шт'].includes(o.unit)&&(o.price===null||Number.isFinite(o.price)&&o.price>0&&o.price<1e7)&&(o.quantity===null||Number.isFinite(o.quantity)&&o.quantity>0&&o.quantity<1e5)&&(!o.observedOn||/^\d{4}-\d{2}-\d{2}$/.test(o.observedOn))&&(!o.validUntil||/^\d{4}-\d{2}-\d{2}$/.test(o.validUntil));}
 // Canonical names affect the view only: source names, IDs and price history stay intact.
 function confirmedProductTitle(o){
  const n=norm(o.productKey||o.name).replace(/\s*·\s*(кг|л|шт)$/u,'').replace(/\s+\d+(?:[.,]\d+)?\s*(?:кг|г)\s*$/u,'').trim();
@@ -32,6 +32,7 @@ function productName(o){
 function productIdentity(o){return productName(o).split(' ').sort().join(' ')+'|'+o.unit;}
 function category(o){
  const n=norm((o.productKey||o.title||'')+' '+(o.name||'')),raw=norm(o.shoppingGroup||o.category);
+ if(/(?:^|\s)(?:корм|корма)(?:$|\s)|(?:кошач|кошек|кошк|котят|туалет).*(?:корм|наполнитель|лоток)|наполнитель.*(?:туалет|кош|лоток)/u.test(n))return 'Для животных';
  // Dairy desserts belong with yogurts; fruit names here describe the flavor.
  if(/туалетн.*бумаг|бумаг.*туалетн|бумажн.*полотен|салфетк|зубн.*паст|зубн.*щет|шампун|мыло|гель.*душ|дезодорант|прокладк|тампон|подгуз|бритв|ватн.*(?:диск|палоч)|гигиен/.test(n))return 'Гигиена';
  if(/панн?а[\s–—-]*котт?а|panna[\s-]*cotta/.test(n))return 'Йогурты';
@@ -70,8 +71,8 @@ function category(o){
 }
 function cheapest(offers){if(offers.length<2)return [];const min=Math.min(...offers.map(unitPrice));return offers.filter(o=>Math.abs(unitPrice(o)-min)<0.005);}
 function groups(rows,opts={}){
- const map=new Map();for(const o of rows){if(o.deleted)continue;const k=productIdentity(o);if(!map.has(k))map.set(k,{key:k,title:confirmedProductTitle(o)||o.productKey.replace(/ · (кг|л|шт)$/,''),category:category(o),unit:o.unit,all:[],byStore:{}});map.get(k).all.push(o);}
- return [...map.values()].map(g=>{for(const store of STORES){const arr=g.all.filter(o=>o.store===store).sort((a,b)=>(b.observedOn||'').localeCompare(a.observedOn||'')||(b.createdAt||'').localeCompare(a.createdAt||''));g.byStore[store]=arr[0]||null;}
+ const map=new Map();for(const o of rows){if(o.deleted)continue;const k=productIdentity(o);if(!map.has(k))map.set(k,{key:k,title:confirmedProductTitle(o)||o.productKey.replace(/ · (кг|л|шт)$/,''),category:category(o),unit:o.unit,all:[],byStore:Object.create(null)});map.get(k).all.push(o);}
+ return [...map.values()].map(g=>{for(const store of new Set([...STORES,...g.all.map(o=>o.store)])){const arr=g.all.filter(o=>o.store===store).sort((a,b)=>(b.observedOn||'').localeCompare(a.observedOn||'')||(b.createdAt||'').localeCompare(a.createdAt||''));g.byStore[store]=arr[0]||null;}
  const eligible=Object.values(g.byStore).filter(o=>o&&unitPrice(o)!==null&&state(o,opts.today)==='fresh'&&!o.conditionsUnclear);
  const historical=Object.values(g.byStore).filter(o=>o&&unitPrice(o)!==null&&['fresh','stale'].includes(state(o,opts.today))&&!o.conditionsUnclear);
  g.archiveWinners=cheapest(historical);g.archiveBest=g.archiveWinners[0]||null;
@@ -80,7 +81,8 @@ function groups(rows,opts={}){
  return g;}).sort((a,b)=>a.title.localeCompare(b.title,'ru'));
 }
 function shoppingPlan(gs,opts={}){
- const stores=Object.fromEntries(STORES.map(s=>[s,{fresh:[],history:[]}])),uncompared=[];
+ const names=new Set([...STORES,...(opts.stores||[]),...gs.flatMap(g=>Object.keys(g.byStore))]);
+ const stores=Object.fromEntries([...names].map(s=>[s,{fresh:[],history:[]}])),uncompared=[];
  for(const g of gs){const fresh=g.winners.length>0,winners=fresh?g.winners:opts.archive===false?[]:g.archiveWinners;
   if(!winners.length){uncompared.push(g);continue;}
   const offers=Object.values(g.byStore).filter(o=>o&&unitPrice(o)!==null&&!o.conditionsUnclear&&(fresh?state(o,opts.today)==='fresh':['fresh','stale'].includes(state(o,opts.today))));
@@ -90,5 +92,28 @@ function shoppingPlan(gs,opts={}){
  return {stores,uncompared};
 }
 function merge(a,b){return [...new Map([...a,...b].map(o=>[o.id,o])).values()];}
-const api={STORES,CATEGORIES,compareCategories,norm,day,unitPrice,state,validate,productName,productIdentity,category,groups,shoppingPlan,merge};if(typeof module==='object'&&module.exports)module.exports=api;else root.GroceryCore=api;
+
+function cashbackFor(price, storeId, category, rules, today = day()){
+ if(!Array.isArray(rules)||!storeId||!Number.isFinite(price)||price<=0)return {main:null,alternatives:[]};
+ const month=today.slice(0,7);
+ const matching=rules.filter(rule=>rule.store_id===storeId&&(!rule.category||rule.category===category)&&(rule.month==='*'||rule.month===month));
+ const base=Math.round((price+Number.EPSILON)*100);
+ const priced=matching.map(rule=>{
+  const benefit=rule.ruble_equivalent_known?Math.round(base*Number(rule.pct)/100):null;
+  return {...rule,benefit,net:benefit===null?null:base-benefit};
+ });
+ const main=priced.filter(rule=>!rule.conditional&&rule.benefit!==null).sort((a,b)=>b.benefit-a.benefit||Number(b.pct)-Number(a.pct))[0]||null;
+ return {main,alternatives:priced.filter(rule=>rule.conditional||rule.benefit===null)};
+}
+
+function purchasePrice(observation,today=day()){
+ if(!observation||state(observation,today)!=='fresh'||observation.conditionsUnclear||observation.conditions||
+    !Number.isFinite(observation.price)||observation.price<=0)return null;
+ const price=isWeighed(observation)?unitPrice(observation):observation.price;
+ return price>0?price:null;
+}
+
+function isWeighed(o){return /на вес|подл[.] вес|весов|(?:^|[^\p{L}])вес(?:$|[^\p{L}])/iu.test(o.name||'');}
+
+const api={cashbackFor,purchasePrice,isWeighed,STORES,CATEGORIES,compareCategories,norm,day,unitPrice,state,validate,productName,productIdentity,category,groups,shoppingPlan,merge};if(typeof module==='object'&&module.exports)module.exports=api;else root.GroceryCore=api;
 })(typeof window==='undefined'?globalThis:window);
