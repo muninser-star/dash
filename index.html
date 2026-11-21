@@ -432,8 +432,10 @@ function usageCaption(p) {
   if (!U) return "Считаю…";
   if (U.error) return esc(p.caption);
   const pc = (a, b) => Math.round((a / b) * 100);
-  const db = pc(U.db_bytes, U.db_limit), st = pc(U.storage_bytes, U.storage_limit), mb = Math.round(U.db_bytes / 1048576);
-  return `<b${Math.max(db, st) >= 80 ? ' style="color:var(--error)"' : ""}>база ${db}%</b> · ${mb} из 500 МБ · файлы ${st}%`;
+  const db = pc(U.db_bytes, U.db_limit), st = pc(U.storage_bytes, U.storage_limit);
+  const updated = U.observed_at ? new Date(U.observed_at).toLocaleString('ru-RU', {timeZone:'Europe/Moscow',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+' МСК' : '';
+  return `<b${Math.max(db, st) >= 80 ? ' style="color:var(--error)"' : ''}>база ${db}% · файлы ${st}%</b><br>Текущий размер этого проекта<br>${(U.db_bytes/1e6).toFixed(1)} / ${(U.db_limit/1e6).toFixed(0)} МБ · файлы ${(U.storage_bytes/1e6).toFixed(1)} / ${(U.storage_limit/1e6).toFixed(0)} МБ<br>Вызовы функций: мониторинг не подключён<br>Квоты организации — в кабинете<br>Файлы: не среднее за месяц${updated ? '<br>Обновлено '+esc(updated) : ''}`;
+
 }
 // Yandex Cloud: сумму API не отдаёт, поэтому только «работает» или «заблокировано — пополните баланс» (по сайтам в бакетах)
 function ycloudCaption(p) {
